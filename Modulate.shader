@@ -1,6 +1,7 @@
 // modulate shader filter by Surreal_7
 
 uniform float     frequency = 0.5;
+uniform float     phase = 0.0;
 uniform float     envelope_on = 1;
 uniform float     envelope_on_to_off = 1;
 uniform float     envelope_off = 1;
@@ -21,7 +22,7 @@ float4 mainImage(VertData v_in) : TARGET
 
 
     float totalTime = envelope_on + envelope_on_to_off + envelope_off + envelope_off_to_on;
-    float period = frac(elapsed_time * frequency) * totalTime;
+    float period = frac(elapsed_time * frequency + phase) * totalTime;
     float t;
 
     if (period < envelope_on)
