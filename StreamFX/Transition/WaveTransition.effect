@@ -46,7 +46,7 @@ uniform float NumWaves <
 	float maximum = 20.0;
 	float step = 0.1;
 	float scale = 1.0;
-> = 5.0;
+> = 7.5;
 
 uniform float Amplitude <
 	string field_type = "slider";
@@ -55,7 +55,7 @@ uniform float Amplitude <
 	float maximum = 1.0;
 	float step = 0.01;
 	float scale = 1.0;
-> = 0.1;
+> = 0.07;
 
 
 uniform float FadeDuration <
@@ -65,7 +65,7 @@ uniform float FadeDuration <
 	float maximum = 1.0;
 	float step = 0.01;
 	float scale = 1.0;
-> = 0.25;
+> = 0.4;
 
 uniform float MaxWaveDuration <
 	string field_type = "slider";
@@ -74,7 +74,7 @@ uniform float MaxWaveDuration <
 	float maximum = 1.0;
 	float step = 0.01;
 	float scale = 1.0;
-> = 0.25;
+> = 0.16;
 
 uniform float VerticalClimb <
 	string field_type = "slider";
@@ -118,14 +118,7 @@ float4 PSTemplate(VertData v_in) : TARGET{
 	float phase = sin(y * PI * 2 * NumWaves);
 
 	float start = 0.5f - MaxWaveDuration * 0.5f;
-	float end = start + MaxWaveDuration;
-
-	float t = 1.0f;
-	if (TransitionTime < start)
-		t = 1.0 - (cos(TransitionTime / start * PI) * 0.5f + 0.5f);
-	else if (TransitionTime > end)
-		t = cos((TransitionTime - end) / start * PI + PI * 2) * 0.5f + 0.5f;
-
+	float t = smoothstep(0.0f, start, TransitionTime) * smoothstep(0.0f, start, 1.0f - TransitionTime);
 	float x = sin(phase) * t * Amplitude;
 
 	v_in.uv.x += x;
