@@ -40,6 +40,8 @@ uniform float Sharpness<
 
 
 uniform float NumWaves <
+	string name = "Number of Waves";	
+	string description = "Number of waves to display simultaneously.";
 	string field_type = "slider";
 	string suffix = "";
 	float minimum = 1.0;
@@ -49,6 +51,7 @@ uniform float NumWaves <
 > = 7.5;
 
 uniform float Amplitude <
+	string description = "Size of the waves.";
 	string field_type = "slider";
 	string suffix = "";
 	float minimum = 0.0;
@@ -59,6 +62,8 @@ uniform float Amplitude <
 
 
 uniform float FadeDuration <
+	string name = "Fade Duration";
+	string description = "Percentage of the transition during which the crossfade is applied.";
 	string field_type = "slider";
 	string suffix = "";
 	float minimum = 0.0;
@@ -68,6 +73,8 @@ uniform float FadeDuration <
 > = 0.4;
 
 uniform float MaxWaveDuration <
+	string name = "Maximum Wave Duration";
+	string description = "Percentage of the transition where the wave effect stays at full amplitude.";
 	string field_type = "slider";
 	string suffix = "";
 	float minimum = 0.0;
@@ -77,13 +84,15 @@ uniform float MaxWaveDuration <
 > = 0.16;
 
 uniform float VerticalClimb <
+	string name = "Vertical Frequency";
+	string description = "Speed at which waves climb the screen vertically."
 	string field_type = "slider";
 	string suffix = "";
-	float minimum = -5;
-	float maximum = 5;
-	float step = 0.1;
+	float minimum = -2;
+	float maximum = 2;
+	float step = 0.01;
 	float scale = 1.0;
-> = 1;
+> = 0.75;
 
 
 
@@ -112,9 +121,10 @@ VertData VSDefault(VertData v_in) {
 
 #define PI 3.14159265359
 
-float4 PSTemplate(VertData v_in) : TARGET{
-
-	float y = v_in.uv.y + TransitionTime * VerticalClimb;
+float4 PSTemplate(VertData v_in) : TARGET
+{
+	float time = Time.x;
+	float y = v_in.uv.y + time * VerticalClimb;
 	float phase = sin(y * PI * 2 * NumWaves);
 
 	float start = 0.5f - MaxWaveDuration * 0.5f;
