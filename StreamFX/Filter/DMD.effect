@@ -60,20 +60,23 @@ uniform bool Smooth = false;
 
 uniform float4 UnlitColor <
 	string name = "Unlit Color";
-	float minimum = 0.0;
-	float maximum = 1.0;
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
 > = { 0.1, 0.025, 0.0, 1.0 };
 
 uniform float4 LitColor <
 	string name = "Lit Color";
-	float minimum = 0.0;
-	float maximum = 1.0;
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
 > = { 1.0, 0.25, 0.0, 1.0 };
 
 uniform float4 BackgroundColor <
 	string name = "Background Color";
-	float minimum = 0.0;
-	float maximum = 1.0;
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
 > = { 0.0, 0.0, 0.0, 1.0 };
 
 

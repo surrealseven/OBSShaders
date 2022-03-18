@@ -1,0 +1,175 @@
+// Always provided by OBS
+uniform float4x4 ViewProj<
+	bool automatic = true;
+	string name = "View Projection Matrix";
+>;
+
+// Provided by Stream Effects
+uniform float4 Time<
+	// x: Time in seconds since the source was created.
+	// y: Time in the current second.
+	// z: Total seconds passed since the source was created.
+	// w: Reserved
+	bool automatic = true;
+	string name = "Time Array";
+	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
+>;
+
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+>;
+
+uniform float4x4 Random<
+	bool automatic = true;
+	string name = "Random Array";
+	string description = "A float4x4 value containing random values between 0 and 1";
+>;
+
+//float4 perInst = float4(Random[0][0], Random[1][0], Random[2][0], Random[3][0]);
+//float4 perActivation = float4(Random[0][1], Random[1][1], Random[2][1], Random[3][1]);
+//float4 perFrame1 = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+//float4 perFrame2 = float4(Random[0][3], Random[1][3], Random[2][3], Random[3][3]);
+
+uniform texture2d InputA<
+	bool automatic = true;
+>;
+
+
+
+#define PI		3.14159265359
+
+
+#define REMAP(x, srcA, srcB, destA, destB) lerp(destA, destB, (x - srcA) / (srcB - srcA))
+
+
+uniform float BorderPixels <
+	string field_type = "slider";
+	string name = "Border Width";
+	float minimum = 0.0;
+	float maximum = 150.0;
+> = 16.0;
+
+uniform float4 BorderColor <
+	string name = "Border Color";
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
+> = { 1.0, 0.25, 0.0, 1.0 };
+
+uniform texture2d BorderTexture <
+	string name = "Border Texture";
+	string field_type = "input";
+	bool automatic = false;
+>;
+
+uniform float BorderAlpha <
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 1.0;
+
+uniform float CornerRadius <
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 600.0;
+> = 50.0;
+
+uniform bool FitContent = true;
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float3 CalculateColorContributions(VertData v_in)
+{
+	float cornerRadius = min(CornerRadius, min(ViewSize.x, ViewSize.y) * 0.5);
+
+	// fold over the the texture coordinates in both directions so we can do all of
+	// the region calculations for a single corner.  this gives us a range of 0 to 1
+	// where 0,0 is the rounded corner, and 1,1 is fully within the border.
+	float2 uv = 0.5 - abs(v_in.uv - 0.5);
+
+	float2 pos = uv * ViewSize.xy;
+	// pos.x *= ViewSize.x / ViewSize.y;  // <-- applying aspect ratio or not seems to be dependent on the type of transform applied to the source
+
+	// first calculate alpha which will define the outer shape
+	float2 radiusCenter = max(pos, cornerRadius);
+	float dist = distance(radiusCenter, pos);
+	float alpha = smoothstep(dist - 1, dist, cornerRadius);
+
+	// calculate the border that follows the corner radius and the rectangular border.  combine
+	// these two to determine what is content and what is border
+	float cornerBorder = smoothstep(dist - 1, dist, max(cornerRadius - BorderPixels, 1));
+	float innerBorder = (smoothstep(BorderPixels - 1, BorderPixels, pos.x) *
+		smoothstep(BorderPixels - 1, BorderPixels, pos.y));
+	float contentMultiplier = cornerBorder * innerBorder;
+	float borderMultiplier = 1 - contentMultiplier;
+
+	return float3(contentMultiplier, borderMultiplier, alpha);
+}
+
+float4 PSBorderTexture(VertData v_in) : TARGET
+{
+	float3 contributions = CalculateColorContributions(v_in);
+
+	float4 borderColor = BorderTexture.Sample(def_sampler, v_in.uv) * contributions.y;
+	borderColor.a *= BorderAlpha;
+	float4 color = InputA.Sample(def_sampler, v_in.uv) * contributions.x;
+	color = color + borderColor;
+	
+	color.a *= contributions.z;
+
+	return color;
+}
+
+float4 PSBorderColor(VertData v_in) : TARGET
+{
+	float3 contributions = CalculateColorContributions(v_in);
+
+	float4 borderColor = BorderColor * contributions.y;
+	float4 color = InputA.Sample(def_sampler, v_in.uv) * contributions.x;
+	color = color + borderColor;
+
+	color.a *= contributions.z;
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSBorderColor(v_in);
+	}
+}
+
+technique DrawTexture
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSBorderTexture(v_in);
+	}
+}

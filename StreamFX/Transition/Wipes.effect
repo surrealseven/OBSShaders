@@ -15,6 +15,13 @@ uniform float4x4 Random<
 	string name = "Random Array";
 	string description = "A float4x4 value containing random values between 0 and 1";
 >;
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+> ;
 uniform texture2d InputA<
 	bool automatic = true;
 >;
@@ -123,25 +130,22 @@ VertData VSDefault(VertData v_in) {
 
 float4 PSTemplate(VertData v_in) : TARGET
 {
-	float time = Time.x;
-	float y = v_in.uv.y + time * VerticalClimb;
-	float phase = sin(y * PI * 2 * NumWaves);
+	float aspect = ViewSize.x / ViewSize.y;
+	float2 pos = v_in.uv - 0.5;
+	pos.x *= aspect;
 
-	float start = 0.5f - MaxWaveDuration * 0.5f;
-	float t = smoothstep(0.0f, start, TransitionTime) * smoothstep(0.0f, start, 1.0f - TransitionTime);
-	float x = sin(phase) * t * Amplitude;
+	float dist = distance(pos, float2(0, 0));
+	float t = step(dist, TransitionTime);
 
-	v_in.uv.x += x;
 
 	float4 sampleA = InputA.Sample(def_sampler, v_in.uv);
 	float4 sampleB = InputB.Sample(def_sampler, v_in.uv);
 
 	float4 rgba;
+	
+	float4 color = lerp(sampleA, sampleB, t);
 
-	t = saturate((TransitionTime - (0.5f - FadeDuration * 0.5f)) / FadeDuration);
-	rgba = lerp(sampleA, sampleB, t);
-
-	return rgba;
+	return color;
 }
 
 technique Draw

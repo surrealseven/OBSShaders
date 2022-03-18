@@ -1,0 +1,108 @@
+// Always provided by OBS
+uniform float4x4 ViewProj<
+	bool automatic = true;
+	string name = "View Projection Matrix";
+>;
+// Provided by Stream Effects
+
+uniform float4 Time<
+	// x: Time in seconds since the source was created.
+	// y: Time in the current second.
+	// z: Total seconds passed since the source was created.
+	// w: Reserved
+	bool automatic = true;
+	string name = "Time Array";
+	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
+> ;
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+> ;
+uniform texture2d InputA<
+	bool automatic = true;
+> ;
+uniform float4x4 Random<
+	bool automatic = true;
+	string name = "Random Array";
+	string description = "A float4x4 value containing random values between 0 and 1";
+> ;
+
+//float4 perInst = float4(Random[0][0], Random[1][0], Random[2][0], Random[3][0]);
+//float4 perActivation = float4(Random[0][1], Random[1][1], Random[2][1], Random[3][1]);
+//float4 perFrame1 = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+//float4 perFrame2 = float4(Random[0][3], Random[1][3], Random[2][3], Random[3][3]);
+
+
+uniform float XScale <
+	string name = "Horizontal Scale";
+	string field_type = "slider";
+	float step = 1;
+	float minimum = 0;
+	float maximum = 512;
+> = 0;
+
+uniform float YScale <
+	string name = "Vertical Scale";
+	string field_type = "slider";
+	float step = 1;
+	float minimum = 0;
+	float maximum = 512;
+> = 0;
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float GetRandom(float2 p)
+{
+	float2 r = float2(
+		23.14069263277926, // e^pi (Gelfond's constant)
+		2.665144142690225 // 2^sqrt(2) (Gelfond–Schneider constant)
+	);
+	return frac(cos(dot(p, r)) * 12345.6789);
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float4 rand = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+
+	float rx = GetRandom(4 * (rand.xy + v_in.uv));
+	float ry = GetRandom(4 * (rand.zw + v_in.uv));
+
+	float2 offset = (float2(rx, ry) * 2 - 1) * float2(XScale, YScale);
+	
+	float2 uv = frac(v_in.uv + offset * ViewSize.zw);
+
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

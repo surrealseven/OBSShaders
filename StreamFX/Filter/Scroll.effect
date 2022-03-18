@@ -1,0 +1,136 @@
+// Always provided by OBS
+uniform float4x4 ViewProj<
+	bool automatic = true;
+	string name = "View Projection Matrix";
+>;
+// Provided by Stream Effects
+
+uniform float4 Time<
+	// x: Time in seconds since the source was created.
+	// y: Time in the current second.
+	// z: Total seconds passed since the source was created.
+	// w: Reserved
+	bool automatic = true;
+	string name = "Time Array";
+	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
+> ;
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+> ;
+uniform texture2d InputA<
+	bool automatic = true;
+> ;
+uniform float4x4 Random<
+	bool automatic = true;
+	string name = "Random Array";
+	string description = "A float4x4 value containing random values between 0 and 1";
+> ;
+
+
+uniform float XSpeed <
+	string name = "Horizontal Speed";
+	string field_type = "input";
+	string suffix = " pixels per second";
+	float step = 1;
+> = 0;
+
+uniform int XStep <
+	string name = "Horizontal Step";
+	string field_type = "slider";
+	string suffix = " pixels";
+	int minimum = 0;
+	int maximum = 4098;
+> = 0;
+
+uniform float YSpeed <
+	string name = "Vertical Speed";
+	string field_type = "input";
+	string suffix = " pixels per second";
+	float step = 1;
+> = 0;
+
+uniform int YStep <
+	string name = "Vertical Step";
+	string field_type = "slider";
+	string suffix = " pixels";
+	int minimum = 0;
+	int maximum = 4098;
+> = 0;
+
+#define BORDERTYPE_NONE		0
+#define BORDERTYPE_WRAP		1
+#define BORDERTYPE_CLAMP	2
+#define BORDERTYPE_MIRROR	3
+
+uniform int BorderType <
+	string name = "Border Type";
+	string field_type = "enum";
+	int enum_0 = BORDERTYPE_NONE;
+	string enum_0_name = "None";
+	int enum_1 = BORDERTYPE_WRAP;
+	string enum_1_name = "Wrap";
+	int enum_2 = BORDERTYPE_CLAMP;
+	string enum_2_name = "Clamp";
+	int enum_3 = BORDERTYPE_MIRROR;
+	string enum_3_name = "Mirror";
+> = BORDERTYPE_WRAP;
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 speed = float2(XSpeed, YSpeed);
+
+	// we do this fmod to ensure the quantization step works on a decent number range.
+	// over time there isn't enough floating point precision and artifacts manifest.
+	float2 offset = fmod(Time.x * speed, ViewSize.xy * 2);
+	if (XStep > 0)
+		offset.x = trunc(offset.x / XStep) * XStep;
+	if (YStep > 0)
+		offset.y = trunc(offset.y / YStep) * YStep;
+	
+	float2 uv = frac((v_in.uv + offset * ViewSize.zw) * 0.5) * 2;
+
+	if (BorderType == BORDERTYPE_WRAP)
+		uv = frac(uv);
+	else if (BorderType == BORDERTYPE_CLAMP)
+		uv = saturate(uv);
+	else if (BorderType == BORDERTYPE_MIRROR)
+		uv = abs(abs(uv - 1) - 1);
+
+	float clip = step(0, uv.x) * step(uv.x, 1) * step(0, uv.y) * step(uv.y, 1);
+	float4 color = InputA.Sample(def_sampler, uv) * clip;
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}
