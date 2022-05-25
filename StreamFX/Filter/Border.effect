@@ -60,6 +60,13 @@ uniform float4 BorderColor <
 	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
 > = { 1.0, 0.25, 0.0, 1.0 };
 
+uniform float4 BackgroundColor <
+	string name = "Background Color";
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
+> = { 0.0, 0.0, 0.0, 0.0 };
+
 uniform texture2d BorderTexture <
 	string name = "Border Texture";
 	string field_type = "input";
@@ -135,7 +142,9 @@ float4 PSBorderTexture(VertData v_in) : TARGET
 
 	float4 borderColor = BorderTexture.Sample(def_sampler, v_in.uv) * contributions.y;
 	borderColor.a *= BorderAlpha;
-	float4 color = InputA.Sample(def_sampler, v_in.uv) * contributions.x;
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	float4 bgColor = BackgroundColor;
+	color = lerp(bgColor, color, color.a) * contributions.x;
 	color = color + borderColor;
 	
 	color.a *= contributions.z;
@@ -148,7 +157,9 @@ float4 PSBorderColor(VertData v_in) : TARGET
 	float3 contributions = CalculateColorContributions(v_in);
 
 	float4 borderColor = BorderColor * contributions.y;
-	float4 color = InputA.Sample(def_sampler, v_in.uv) * contributions.x;
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	float4 bgColor = BackgroundColor;
+	color = lerp(bgColor, color, color.a) * contributions.x;
 	color = color + borderColor;
 
 	color.a *= contributions.z;

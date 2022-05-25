@@ -1,0 +1,123 @@
+// Always provided by OBS
+uniform float4x4 ViewProj<
+	bool automatic = true;
+	string name = "View Projection Matrix";
+>;
+
+// Provided by Stream Effects
+uniform float4 Time<
+	// x: Time in seconds since the source was created.
+	// y: Time in the current second.
+	// z: Total seconds passed since the source was created.
+	// w: Reserved
+	bool automatic = true;
+	string name = "Time Array";
+	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
+>;
+
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+>;
+
+uniform float4x4 Random<
+	bool automatic = true;
+	string name = "Random Array";
+	string description = "A float4x4 value containing random values between 0 and 1";
+>;
+
+//float4 perInst = float4(Random[0][0], Random[1][0], Random[2][0], Random[3][0]);
+//float4 perActivation = float4(Random[0][1], Random[1][1], Random[2][1], Random[3][1]);
+//float4 perFrame1 = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+//float4 perFrame2 = float4(Random[0][3], Random[1][3], Random[2][3], Random[3][3]);
+
+uniform texture2d InputA<
+	bool automatic = true;
+>;
+
+
+#define PI		3.14159265359
+
+
+
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Point;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float GetLuma(float4 color)
+{
+	float luma = 0.3 * color.r + 0.59 * color.g + 0.11 * color.b;
+	return luma;
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv + ViewSize.zw;
+
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	float2 offset = float2(ViewSize.z, 0);
+
+	float4 m1 = InputA.Sample(def_sampler, uv - offset);
+	float4 p1 = InputA.Sample(def_sampler, uv + offset);	
+
+	offset = float2(0, ViewSize.w);
+	float4 m1y = InputA.Sample(def_sampler, uv - offset);
+	float4 p1y = InputA.Sample(def_sampler, uv + offset);
+
+	float lc = GetLuma(color);
+	float lm1 = GetLuma(m1);
+	float lp1 = GetLuma(p1);
+	float lm1y = GetLuma(m1y);
+	float lp1y = GetLuma(p1y);
+
+	float d0 = lc - lm1;
+	float d1 = lp1 - lc;+
+
+	float delta = abs(d0 * d1) * (d0 - d1);
+	float d0y = lc - lm1y;
+	float d1y = lp1y - lc;
+	float deltay = abs(d0y * d1y) * (d0y - d1y);
+
+	float t = delta * deltay * 50000;
+
+	if (t > (1.0 / 255.0))
+	{
+		// color = float4(1.0, 0.0, 0.0, 1.0);
+		color = p1;
+	}
+	// color.rgb = t;
+	
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

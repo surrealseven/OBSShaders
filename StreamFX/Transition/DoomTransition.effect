@@ -1,0 +1,131 @@
+// Always provided by OBS
+uniform float4x4 ViewProj<
+	bool automatic = true;
+string name = "View Projection Matrix";
+> ;
+
+// Provided by Stream Effects
+uniform float4 Time<
+	// x: Time in seconds since the source was created.
+	// y: Time in the current second.
+	// z: Total seconds passed since the source was created.
+	// w: Reserved
+	bool automatic = true;
+string name = "Time Array";
+string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
+> ;
+
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+> ;
+
+uniform float4x4 Random<
+	bool automatic = true;
+string name = "Random Array";
+string description = "A float4x4 value containing random values between 0 and 1";
+> ;
+
+//float4 perInst = float4(Random[0][0], Random[1][0], Random[2][0], Random[3][0]);
+//float4 perActivation = float4(Random[0][1], Random[1][1], Random[2][1], Random[3][1]);
+//float4 perFrame1 = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+//float4 perFrame2 = float4(Random[0][3], Random[1][3], Random[2][3], Random[3][3]);
+
+uniform texture2d InputA<
+	bool automatic = true;
+> ;
+uniform texture2d InputB<
+	bool automatic = true;
+> ;
+uniform float TransitionTime<
+	bool automatic = true;
+> ;
+uniform int2 TransitionSize<
+	bool automatic = true;
+> ;
+
+
+#define PI		3.14159265359
+
+
+
+uniform int StripCount <
+	string name = "Strip Count";
+	string field_type = "slider";
+	int minimum = 1;
+	int maximum = 2048;
+> = 160;
+
+uniform float Frequency <
+	string field_type = "slider";
+	float step = 0.1;
+	float minimum = 0.1;
+	float maximum = 3.0;
+> = 0.75;
+
+uniform float Amplitude <
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0.0;
+	float maximum = 3.0;
+> = 1.3;
+
+
+
+// ---------- Shader Code
+sampler_state def_sampler{
+	AddressU = Clamp;
+	AddressV = Clamp;
+	Filter = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = v_in.uv;
+	return vert_out;
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv;
+
+	float quantX = trunc(uv.x * StripCount) / StripCount;	
+
+	float offset =
+		sin(PI * 2 * (quantX * (Frequency * 4) + Random[0][1])) *
+		cos(PI * 2 * (quantX * (Frequency * 5) + Random[1][1])) *
+		sin(PI * 2 * (quantX * (Frequency * 6) + Random[2][1])) *
+		cos(PI * 2 * (quantX * (Frequency * 7) + Random[3][1]));
+		
+	offset = offset * Amplitude + (TransitionTime * (Amplitude * 2 + 1) - Amplitude);
+	offset = max(offset, 0);
+
+	uv.y -= offset;
+
+	float4 bgColor = InputB.Sample(def_sampler, v_in.uv);
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	if (uv.y < 0)
+		color = bgColor;
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSDefault(v_in);
+	}
+}

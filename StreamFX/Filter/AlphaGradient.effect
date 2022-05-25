@@ -1,0 +1,424 @@
+// Always provided by OBS
+uniform float4x4 ViewProj<
+	bool automatic = true;
+	string name = "View Projection Matrix";
+>;
+
+// Provided by Stream Effects
+uniform float4 Time<
+	// x: Time in seconds since the source was created.
+	// y: Time in the current second.
+	// z: Total seconds passed since the source was created.
+	// w: Reserved
+	bool automatic = true;
+	string name = "Time Array";
+	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
+>;
+
+uniform float4 ViewSize<
+	// x: Width
+	// y: Height
+	// z: 1. / Width
+	// w: 1. / Height
+	bool automatic = true;
+>;
+
+uniform float4x4 Random<
+	bool automatic = true;
+	string name = "Random Array";
+	string description = "A float4x4 value containing random values between 0 and 1";
+>;
+
+//float4 perInst = float4(Random[0][0], Random[1][0], Random[2][0], Random[3][0]);
+//float4 perActivation = float4(Random[0][1], Random[1][1], Random[2][1], Random[3][1]);
+//float4 perFrame1 = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+//float4 perFrame2 = float4(Random[0][3], Random[1][3], Random[2][3], Random[3][3]);
+
+uniform texture2d InputA<
+	bool automatic = true;
+> ;
+
+
+#define PI		3.14159265359
+
+
+uniform float Alpha1 <
+	string name = "Alpha 1";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 1;
+
+uniform float Alpha2 <
+	string name = "Alpha 2";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 1;
+
+uniform float Alpha3 <
+	string name = "Alpha 3";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 1;
+
+uniform float Alpha4 <
+	string name = "Alpha 4";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 1;
+
+
+uniform float2 Center <
+	string name = "Center";
+	string field_type = "slider";
+	float2 minimum = { 0, 0 };
+	float2 maximum = { 1, 1 };
+> = { 0.5, 0.5 };
+
+uniform float Rotation <
+	string name = "Rotation";
+	string field_type = "slider";
+	float minimum = -180;
+	float maximum = 180;
+	float step = 0.01;
+> = 0;
+
+uniform float RotationSpeed <
+	string name = "Rotation Speed";
+	string field_type = "slider";
+	float minimum = -720;
+	float maximum = 720;
+	float step = 0.1;
+> = 0;
+
+uniform float Scale <
+	string name = "Scale";
+	string field_type = "slider";
+	float minimum = 0.5;
+	float maximum = 10;
+	float step = 0.01;
+> = 1;
+
+uniform bool MaintainAspect <
+	string name = "Maintain Aspect Ratio";
+> = false;
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = v_in.uv;
+	return vert_out;
+}
+
+
+
+
+
+float2 GetUV(float2 uv)
+{
+	float theta = (Rotation + RotationSpeed * Time.x) / 180 * PI;
+	float sinTheta = sin(theta);
+	float cosTheta = cos(theta);
+
+	uv -= Center;
+
+	float u = uv.x * cosTheta + uv.y * sinTheta + 0.5;
+	float v = uv.x * sinTheta - uv.y * cosTheta + 0.5;
+
+	return float2(u, v);
+}
+
+float4 Interpolate2(float2 uv, float t, float alpha0, float alpha1)
+{
+	float4 color = InputA.Sample(def_sampler, uv);
+	float alpha = lerp(alpha0, alpha1, saturate(t));
+	color.a *= alpha;
+	return color;
+}
+
+float4 Interpolate3(float2 uv, float t, float alpha0, float alpha1, float alpha2)
+{
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	t = saturate(t) * 2;
+
+	float mul0 = step(t, 1);
+	float mul1 = step(1, t);
+
+	float t0 = smoothstep(0, 1, t);
+	float t1 = smoothstep(0, 1, t - 1);
+
+	float alpha = 
+		lerp(alpha0, alpha1, t0) * mul0 +
+		lerp(alpha1, alpha2, t1) * mul1;
+
+	color.a *= alpha;
+	return color;
+}
+
+float4 Interpolate4(float2 uv, float t, float alpha0, float alpha1, float alpha2, float alpha3)
+{
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	t = saturate(t) * 3;
+
+	float mul0 = step(t, 1);
+	float mul1 = step(t, 2) * step(1, t);
+	float mul2 = step(2, t);
+
+	float t0 = smoothstep(0, 1, t);
+	float t1 = smoothstep(0, 1, t - 1);
+	float t2 = smoothstep(0, 1, t - 2);
+
+	float alpha =
+		lerp(alpha0, alpha1, t0) * mul0 +
+		lerp(alpha1, alpha2, t1) * mul1 +
+		lerp(alpha2, alpha3, t2) * mul2;
+
+	color.a *= alpha;
+	return color;
+}
+
+float4 Interpolate5(float2 uv, float t, float alpha0, float alpha1, float alpha2, float alpha3, float alpha4)
+{
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	t = saturate(t) * 4;
+
+	float mul0 = step(t, 1);
+	float mul1 = step(t, 2) * step(1, t);
+	float mul2 = step(t, 3) * step(2, t);
+	float mul3 = step(3, t);
+
+	float t0 = smoothstep(0, 1, t);
+	float t1 = smoothstep(0, 1, t - 1);
+	float t2 = smoothstep(0, 1, t - 2);
+	float t3 = smoothstep(0, 1, t - 3);
+
+	float4 alpha =
+		lerp(alpha0, alpha1, t0) * mul0 +
+		lerp(alpha1, alpha2, t1) * mul1 +
+		lerp(alpha2, alpha3, t2) * mul2 +
+		lerp(alpha3, alpha4, t3) * mul3;
+
+	color.a *= alpha;
+	return color;
+}
+
+
+
+
+
+float4 PSCorners(VertData v_in) : TARGET
+{
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	float2 uv = GetUV(v_in.uv);
+	float hAlpha = lerp(Alpha1, Alpha2, uv.x);
+	float vAlpha = lerp(Alpha3, Alpha4, uv.x);
+	float alpha = lerp(hAlpha, vAlpha, uv.y);
+	color.a *= alpha;
+	return color;
+}
+
+
+float4 PSLinear2(VertData v_in) : TARGET
+{
+	float2 uv = GetUV(v_in.uv);
+	float4 color = Interpolate2(v_in.uv, uv.x, Alpha1, Alpha2);
+	return color;
+}
+
+float4 PSLinear3(VertData v_in) : TARGET
+{
+	float2 uv = GetUV(v_in.uv);
+	float4 color = Interpolate3(v_in.uv, uv.x, Alpha1, Alpha2, Alpha3);
+	return color;
+}
+
+float4 PSLinear4(VertData v_in) : TARGET
+{
+	float2 uv = GetUV(v_in.uv);
+	float4 color = Interpolate4(v_in.uv, uv.x, Alpha1, Alpha2, Alpha3, Alpha4);
+	return color;
+}
+
+
+
+float4 PSRadial2(VertData v_in) : TARGET
+{
+	float2 uv = GetUV(v_in.uv);
+	float t = atan2(uv.y - 0.5, uv.x - 0.5) / PI * 0.5 + 0.5;
+	float4 color = Interpolate3(v_in.uv, t, Alpha1, Alpha2, Alpha1);
+	return color;
+}
+
+float4 PSRadial3(VertData v_in) : TARGET
+{
+	float2 uv = GetUV(v_in.uv);
+	float t = atan2(uv.y - 0.5, uv.x - 0.5) / PI * 0.5 + 0.5;
+	float4 color = Interpolate4(v_in.uv, t, Alpha1, Alpha2, Alpha3, Alpha1);
+	return color;
+}
+
+float4 PSRadial4(VertData v_in) : TARGET
+{
+	float2 uv = GetUV(v_in.uv);
+	float t = atan2(uv.y - 0.5, uv.x - 0.5) / PI * 0.5 + 0.5;
+	float4 color = Interpolate5(v_in.uv, t, Alpha1, Alpha2, Alpha3, Alpha4, Alpha1);
+	return color;
+}
+
+
+
+float2 CalculateIrisUV(float2 uv)
+{
+	if (MaintainAspect)
+		uv.x = (uv.x - 0.5) * ViewSize.x / ViewSize.y + 0.5;
+	return uv;
+}
+
+float4 PSIris2(VertData v_in) : TARGET
+{
+	float2 uv = CalculateIrisUV(v_in.uv);
+	float t = distance(uv, Center) * 2 / Scale;
+	float4 color = Interpolate2(v_in.uv, t, Alpha1, Alpha2);
+	return color;
+}
+
+float4 PSIris3(VertData v_in) : TARGET
+{
+	float2 uv = CalculateIrisUV(v_in.uv);
+	float t = distance(uv, Center) * 2 / Scale;
+	float4 color = Interpolate3(v_in.uv, t, Alpha1, Alpha2, Alpha3);
+	return color;
+}
+
+float4 PSIris4(VertData v_in) : TARGET
+{
+	float2 uv = CalculateIrisUV(v_in.uv);
+	float t = distance(uv, Center) * 2 / Scale;
+	float4 color = Interpolate4(v_in.uv, t, Alpha1, Alpha2, Alpha3, Alpha4);
+	return color;
+}
+
+
+
+
+
+
+
+technique Corners
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSCorners(v_in);
+	}
+}
+
+
+
+technique Linear2
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSLinear2(v_in);
+	}
+}
+
+technique Linear3
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSLinear3(v_in);
+	}
+}
+
+technique Linear4
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSLinear4(v_in);
+	}
+}
+
+
+
+technique Radial2
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSRadial2(v_in);
+	}
+}
+
+technique Radial3
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSRadial3(v_in);
+	}
+}
+
+technique Radial4
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSRadial4(v_in);
+	}
+}
+
+
+
+technique Iris2
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSIris2(v_in);
+	}
+}
+
+technique Iris3
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSIris3(v_in);
+	}
+}
+
+technique Iris4
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSIris4(v_in);
+	}
+}
+
+
+
