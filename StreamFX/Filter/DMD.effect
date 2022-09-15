@@ -1,15 +1,7 @@
-// Always provided by OBS
-uniform float4x4 ViewProj<
-	bool automatic = true;
-	string name = "View Projection Matrix";
->;
-// Provided by Stream Effects
-uniform float4 ViewSize<
-	bool automatic = true;
->;
-uniform texture2d InputA<
-	bool automatic = true;
->;
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
 
 
 
@@ -126,7 +118,7 @@ float4 PSDefault(VertData v_in) : TARGET
 	// calculate luminance and apply shaping
 	if (Monochrome)
 	{
-		float gray = 0.3 * color.r + 0.59 * color.g + 0.11 * color.b;
+		float gray = RgbToLuma(color.rgb);
 		gray *= Brightness;
 		gray = (gray - 0.5) * Contrast + 0.5;
 

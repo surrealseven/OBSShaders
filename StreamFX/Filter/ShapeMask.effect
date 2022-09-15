@@ -1,0 +1,214 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+
+uniform float CenterX <
+	string name = "Center X";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -1;
+	float maximum = 1;
+> = 0;
+
+uniform float CenterY <
+	string name = "Center Y";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -1;
+	float maximum = 1;
+> = 0;
+
+uniform float Radius <
+	string name = "Radius";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1.1;
+> = 0.5;
+
+uniform float Smooth <
+	string name = "Border Smoothing";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 0.13;
+
+uniform float Amount <
+	string name = "Amount";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 100;
+	float step = 0.01;
+	float scale = 0.01;
+> = 10;
+
+uniform float Rotation <
+	string name = "Rotation";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 360;
+> = 0;
+
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 CircleMask(VertData v_in) : TARGET 
+{	
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	
+	float2 center = float2(CenterX, CenterY);
+	float2 srcUv = v_in.uv - float2(0.5, 0.5);
+	srcUv.x *= ViewSize.x * ViewSize.w;
+
+	float dist = distance(center, srcUv);
+
+	float alpha = 1.0 - (smoothstep(Radius - Smooth * 0.5, Radius + Smooth * 0.5, dist) / (Radius + Smooth));
+
+	color.a *= alpha;
+
+	return color;
+}
+
+technique Circle
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = CircleMask(v_in); 
+	}
+}
+
+
+float4 SquareMask(VertData v_in) : TARGET 
+{	
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	
+	float2 center = float2(CenterX, CenterY);
+	float2 srcUv = v_in.uv - float2(0.5, 0.5);
+	srcUv.x *= ViewSize.x * ViewSize.w;
+
+	float s, c;
+	sincos(Rotation / 180 * PI, s, c);
+	float2x2 mat = { c, -s, s, c };
+	srcUv = mul(srcUv, mat);
+
+	float2 delta = abs(srcUv - center);
+	float dist = max(delta.x, delta.y);
+
+	float alpha = 1.0 - (smoothstep(Radius - Smooth * 0.5, Radius + Smooth * 0.5, dist) / (Radius + Smooth));
+
+	color.a *= alpha;
+
+	return color;
+}
+
+technique Square
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = SquareMask(v_in);
+	}
+}
+
+
+
+float4 CrossMask(VertData v_in) : TARGET
+{
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+
+	float2 center = float2(CenterX, CenterY);
+	float2 srcUv = v_in.uv - float2(0.5, 0.5);
+	srcUv.x *= ViewSize.x * ViewSize.w;
+
+	float s, c;
+	sincos(Rotation / 180 * PI, s, c);
+	float2x2 mat = { c, -s, s, c };
+	srcUv = mul(srcUv, mat);
+
+	float2 delta = abs(srcUv - center);
+	float dist = min(delta.x, delta.y);
+
+	float alpha = 1.0 - (smoothstep(Radius - Smooth * 0.5, Radius + Smooth * 0.5, dist) / (Radius + Smooth));
+
+	color.a *= alpha;
+
+	return color;
+}
+
+technique Cross
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = CrossMask(v_in);
+	}
+}
+
+float4 LetterboxMask(VertData v_in) : TARGET
+{
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+
+	float t = abs(v_in.uv.y - 0.5) * 2.0;
+
+	float thresh = 1.0 - Amount;
+	float alpha = 1.0 - smoothstep(thresh - Smooth * 0.5, thresh + Smooth * 0.5, t);
+
+	color.a *= alpha;
+
+	return color;
+}
+
+technique Letterbox
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = LetterboxMask(v_in);
+	}
+}
+
+float4 InverseLetterboxMask(VertData v_in) : TARGET
+{
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+
+	float t = abs(v_in.uv.y - 0.5) * 2.0;
+
+	float thresh = 1.0 - Amount;
+	float alpha = smoothstep(thresh - Smooth * 0.5, thresh + Smooth * 0.5, t);
+
+	color.a *= alpha;
+
+	return color;
+}
+
+technique InverseLetterbox
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = InverseLetterboxMask(v_in);
+	}
+}

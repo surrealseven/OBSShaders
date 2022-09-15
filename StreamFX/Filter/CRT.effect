@@ -1,0 +1,196 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+uniform float Strength <
+	string name = "Strength";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
+
+uniform float Curvature <
+	string name = "Curvature";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.5;
+
+uniform float Fade <
+	string name = "Fade";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.1;
+
+uniform float Desaturation <
+	string name = "Desaturation";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.0;
+
+
+uniform float4 BorderColor <
+	string name = "Border Color";
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
+> = { 0.0, 0.0, 0.0, 1.0 };
+
+uniform float OffsetR <
+	string name = "R Offset";
+	string field_type = "slider";
+	float minimum = -1.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float OffsetG <
+	string name = "G Offset";
+	string field_type = "slider";
+	float minimum = -1.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float OffsetB <
+	string name = "B Offset";
+	string field_type = "slider";
+	float minimum = -1.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float ChromaticDistort <
+	string name = "Chromatic Aberration";
+	string field_type = "slider";
+	float minimum = -1.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float ScanlineCount <
+	string name = "Scanline Count";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 500.0;
+> = 0.0;
+
+uniform float ScanlineMoire <
+	string name = "Scanline Moire";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float Flicker <
+	string name = "Flicker";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float HorizontalHold <
+	string name = "Horizontal Hold";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float VerticalHold <
+	string name = "Vertical Hold";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float RollBarSpeed <
+	string name = "Roll Bar Speed";
+	string field_type = "slider";
+	float minimum = -2.0;
+	float maximum = 2.0;
+> = 0.2;
+
+uniform float RollBarDepth <
+	string name = "Roll Bar Depth";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 FetchDistortedColor(float2 uv, float offset, float scale, float dist)
+{
+	float2 center = float2(0.5, 0.5);
+	uv = uv - center;
+	uv.x += offset * 0.01 * Strength;
+	uv += uv * dist * (ChromaticDistort * scale) * Strength;
+	uv = uv + center;
+	return InputA.Sample(def_sampler, uv);
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{	
+	// shape the screen	
+	float2 uv = v_in.uv;
+	float2 normUv = uv - float2(0.5, 0.5);
+	float dist = length(normUv) * Curvature * Strength;
+	uv = uv + normUv * (dist * dist);
+
+	// add horizontal and vertical hold noise
+	uv.x += sin((uv.y +  Random[3][2]) * PI * 2 * Random[2][2]) * Random[1][2] * HorizontalHold * 0.01 * Strength;
+	uv.y += Random[0][3] * VerticalHold * 0.01 * Strength;
+
+	// apply color distortion
+	float4 colorR = FetchDistortedColor(uv, OffsetR, 0.1, dist);
+	float4 colorG = FetchDistortedColor(uv, OffsetG, 0.0, dist);
+	float4 colorB = FetchDistortedColor(uv, OffsetB, -0.1, dist);
+	float4 colorA = InputA.Sample(def_sampler, uv);
+	float4 color = float4(colorR.r, colorG.g, colorB.b, colorA.a);
+
+	// desaturate the color
+	color = DesaturateRgba(color, Desaturation * Strength);
+
+	// apply scan line effect, flicker, and roll bar
+	color.rgb *= saturate((1 + ScanlineMoire * 0.8) - sin(PI * 2 * uv.y * ScanlineCount) * (ScanlineMoire * 0.9 + 0.1) * Strength);
+	color.rgb *= 1.0 - (Random[0][2] * Flicker * 0.5 * Strength);
+	color.rgb *= saturate((1 + (1 - RollBarDepth) * 0.5) - sin(PI * 2 * (uv.y - Time.x * RollBarSpeed)) * 0.5 * Strength);
+
+	// anti-alias the border and give the image a vingnette
+	float fade = Fade * 0.1 * Strength;
+	float2 t2 = smoothstep(0, fade, uv) * smoothstep(0, fade, 1.0 - uv);
+	float t = t2.x * t2.y;
+	color = lerp(BorderColor, color, t);
+	
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

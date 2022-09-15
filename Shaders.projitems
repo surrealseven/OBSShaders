@@ -16,21 +16,28 @@
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Dither.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\DMD.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\EdgeDetect.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\CRT.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\SrlFilterEffect.h" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Progress.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Rotate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Scroll.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Shake.effect" />
-    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Template.effect" />
-    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Tunnel.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\RadialWrap.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\ShapeMask.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Noir.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\FilterTemplate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Vignette.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Warp.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Wobble.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Gradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Hypnotic.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Spiral.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\SrlSourceEffect.h" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\TwilightZone.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\SrlCommon.h" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\DoomTransition.effect" />
-    <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\Template.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\SrlTransitionEffect.h" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\TransitionTemplate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\WaveTransition.effect" />
   </ItemGroup>
 </Project>

@@ -1,0 +1,117 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+
+uniform float Hue <
+	string name = "Hue";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -1;
+	float maximum = 1;
+> = 0;
+
+uniform float HueSmooth <
+	string name = "Hue Smoothing";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0;
+
+uniform float Width <
+	string name = "Width";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.1;
+
+uniform float MinSaturation <
+	string name = "Minimum Saturation";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0;
+
+uniform float SaturationSmooth <
+	string name = "Saturation Smoothing";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0;
+
+uniform float Strength <
+	string name = "Strength";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
+
+uniform float Contrast <
+	string name = "Contrast";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -1;
+	float maximum = 1;
+> = 0;
+
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+
+
+
+float4 PSDefault(VertData v_in) : TARGET 
+{	
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	
+	float3 hsv = RgbToHsv(color.rgb);
+
+	float luma = RgbToLuma(color.rgb);
+	hsv.z = luma;
+
+	float value = hsv.z * 2.0 - 1.0;
+	hsv.z = pow(abs(value), 1.0 - Contrast) * sign(value) * 0.5 + 0.5;
+
+	float dist = min(abs(hsv.x - Hue * 0.5), abs(1.0 - hsv.x + Hue * 0.5));
+
+	float t = 1.0 - smoothstep(Width - HueSmooth * 0.5, Width, dist);
+	t *= smoothstep(MinSaturation - SaturationSmooth * 0.5, MinSaturation, hsv.y);
+	t = 1.0 - ((1.0 - t) * Strength);
+
+	color.rgb = lerp(hsv.zzz, color.rgb, t);
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

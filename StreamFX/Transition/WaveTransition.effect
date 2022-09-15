@@ -1,32 +1,6 @@
-// Always provided by OBS
-uniform float4x4 ViewProj<
-	bool automatic = true;
-	string name = "View Projection Matrix";
->;
+// include filter shader variables
+#include "SrlTransitionEffect.h"
 
-// Provided by Stream Effects
-uniform float4 Time<
-	bool automatic = true;
-	string name = "Time Array";
-	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
->;
-uniform float4x4 Random<
-	bool automatic = true;
-	string name = "Random Array";
-	string description = "A float4x4 value containing random values between 0 and 1";
->;
-uniform texture2d InputA<
-	bool automatic = true;
->;
-uniform texture2d InputB<
-	bool automatic = true;
->;
-uniform float TransitionTime<
-	bool automatic = true;
->;
-uniform int2 TransitionSize<
-	bool automatic = true;
->;
 
 uniform float Sharpness<
 	string field_type = "slider";

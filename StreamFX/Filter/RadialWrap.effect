@@ -1,0 +1,198 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+
+
+uniform float CenterX <
+	string name = "Center X";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -1;
+	float maximum = 1;
+> = 0;
+
+uniform float CenterY <
+	string name = "Center Y";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -1;
+	float maximum = 1;
+> = 0;
+
+uniform bool Wrap = false;
+
+uniform float Curvature <
+	string name = "Curvature";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.1;
+	float minimum = 0.5;
+	float maximum = 50;
+> = 10;
+
+uniform float RotPhase <
+	string name = "Rotation Phase";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 100;
+> = 0;
+
+uniform float RotSpeed <
+	string name = "Rotation Speed";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.1;
+	float minimum = -100;
+	float maximum = 100;
+> = 0;
+
+uniform float Zoom <
+	string name = "Zoom";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 100;
+> = 0;
+
+uniform float ZoomSpeed <
+	string name = "Zoom Speed";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.1;
+	float minimum = -100;
+	float maximum = 100;
+> = 0;
+
+
+uniform float MinV <
+	string name = "Minimum Y";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 100;
+> = 0;
+
+uniform float MaxV <
+	string name = "Maximum Y";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 100;
+> = 100;
+
+uniform float MinDist <
+	string name = "Minimum Distance";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 100;
+> = 20;
+
+uniform float MaxDist <
+	string name = "Maximum Distance";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 120.0;
+> = 95;
+
+uniform float Opacity <
+	string name = "Opacity";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
+
+uniform float InnerFade <
+	string name = "Inner Fade";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 50;
+> = 0;
+
+uniform float OuterFade <
+	string name = "Outer Fade";
+	string field_type = "slider";
+	float step = 0.01;
+	float scale = 0.01;
+	float minimum = 0;
+	float maximum = 50;
+> = 0;
+
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Wrap;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 srcUv = v_in.uv;	
+	srcUv -= float2(CenterX + 0.5, CenterY + 0.5);
+	srcUv.x *= ViewSize.x * ViewSize.w;	
+
+	float2 destUv = srcUv;	
+
+	float dist = distance(float2(0, 0), srcUv);
+	float alpha = Opacity;
+
+	if (!Wrap && ((dist < MinDist) || (dist > MaxDist)))
+		alpha = 0.0;
+
+	float y = frac((dist - MinDist) / (MaxDist - MinDist));
+	float zoom = Time.x * ZoomSpeed + Zoom;
+	
+	alpha *= 1.0 - smoothstep(0.0, y, InnerFade * 0.1);
+	alpha *= smoothstep(y, 1.0, 1.0 - OuterFade * 0.1);
+
+	y = frac(y + zoom);
+	y = pow(y, Curvature);
+	y = lerp(MaxV, MinV, y);
+	
+	float phase = frac(Time.x * RotSpeed * 0.1 + RotPhase);	
+
+	destUv.y = y;
+	destUv.x = frac(atan2(srcUv.x, srcUv.y) / PI * 0.5 + 0.5 + phase);
+	if (MinV < MaxV)
+		destUv.x = 1.0 - destUv.x;
+
+	float4 color = InputA.Sample(def_sampler, destUv);
+	color.a *= alpha;
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

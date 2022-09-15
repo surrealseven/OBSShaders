@@ -1,35 +1,5 @@
-// Always provided by OBS
-uniform float4x4 ViewProj<
-	bool automatic = true;
-	string name = "View Projection Matrix";
->;
-
-// Provided by Stream Effects
-uniform float4 Time<
-    // x: Time in seconds since the source was created.
-    // y: Time in the current second.
-    // z: Total seconds passed since the source was created.
-    // w: Reserved
-	bool automatic = true;
-    string name = "Time Array";
-	string description = "A float4 value containing the total time, rendering time and the time since the last tick. The last value is a random number between 0 and 1.";
->;
-uniform float4 ViewSize<
-    // x: Width
-    // y: Height
-    // z: 1. / Width
-    // w: 1. / Height
-	bool automatic = true;
->;
-uniform texture2d InputA<
-	bool automatic = true;
->;
-uniform float4x4 Random<
-	bool automatic = true;
-	string name = "Random Array";
-	string description = "A float4x4 value containing random values between 0 and 1";
->;
-
+// include filter shader variables
+#include "SrlSourceEffect.h"
 
 // Shader Parameters
 uniform int ArmCount <
@@ -104,6 +74,13 @@ uniform float Handedness <
 	string enum_1_name = "Left";
 > = 0;
 
+uniform float Opacity <
+	string name = "Opacity";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
 
 #define PI		3.14159265359
 #define DEG2RAD	PI / 180
@@ -161,7 +138,7 @@ float4 PSDefault(VertData v_in) : TARGET
 	float4 color = 0;
 
 	color = CalculateColor(uv, float2(CenterX * aspect, CenterY));
-	color.a = 1;
+	color.a = Opacity;
 
 	return color;
 }
