@@ -5,6 +5,36 @@
 #define PI		3.14159265359
 
 ////////////////////////////////////////////////////////////////////////////////
+// Geometry
+
+bool PointInTriangle(float2 pt, float2 p1, float2 p2, float2 p3)
+{
+	// compute triangle sides
+	float2 v0 = p3 - p1;
+	float2 v1 = p2 - p1;
+	float2 v2 = pt - p1;
+
+	float dot00 = dot(v0, v0);
+	float dot01 = dot(v0, v1);
+	float dot02 = dot(v0, v2);
+	float dot11 = dot(v1, v1);
+	float dot12 = dot(v1, v2);
+
+	// compute barycentric coordinates
+	float invDenom = 1 / (dot00 * dot11 - dot01 * dot01);
+	float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+	float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+	// Check if point is in triangle
+	return (u >= 0) && (v >= 0) && (u + v <= 1);
+}
+
+bool PointInQuad(float2 pt, float2 p1, float2 p2, float2 p3, float2 p4)
+{
+	return PointInTriangle(pt, p1, p2, p3) || PointInTriangle(pt, p1, p3, p4);
+}
+
+////////////////////////////////////////////////////////////////////////////////
 // Color stuff
 
 float RgbToLuma(float3 color)
@@ -25,7 +55,114 @@ float4 DesaturateRgba(float4 rgba, float strength)
 	return float4(DesaturateRgb(rgba.rgb, strength), rgba.a);
 }
 
+////////////////////////////////////////
 
+float3 RgbToYuv(float3 rgb)
+{
+	float3x3 m = float3x3(
+	     0.2126,  0.7152,  0.0722, 
+	    -0.1146, -0.3854,  0.5, 
+		 0.5,    -0.4542, -0.0458);
+	return mul(m, rgb) + float3(0, 0.5, 0.5);
+}
+
+float3 YuvToRgb(float3 yuv)
+{
+	float3x3 m = float3x3(
+		1,  0,       1.5748, 
+		1, -0.1873, -0.4681,
+		1,  1.8556,  0);
+	return mul(m, yuv - float3(0, 0.5, 0.5));
+}
+
+float4 RgbaToYuv(float4 rgba)
+{
+	float3 yuv = RgbToYuv(rgba.rgb);
+	return float4(yuv.x, yuv.y, yuv.z, rgba.a);
+}
+
+float4 YuvToRgba(float4 yuv)
+{
+	float3 rgb = YuvToRgb(yuv);
+	return float4(rgb.r, rgb.g, rgb.b, yuv.a);
+}
+
+////////////////////////////////////////
+
+float3 RgbToYCbCr(float3 rgb)
+{
+	float3x3 m = float3x3(
+		 0.299,  0.587,  0.114,
+		-0.169, -0.331,  0.5,
+		 0.5,   -0.419, -0.081);
+	return mul(m, rgb) + float3(0, 128.0 / 255.0, 128.0 / 255.0);
+}
+
+float3 YCbCrToRgb(float3 yCbCr)
+{
+	float3x3 m = float3x3(
+		1, 0, 1.400,
+		1, -0.343, -0.711,
+		1, 1.765, 0);
+	return mul(m, yCbCr - float3(0, 128.0 / 255.0, 128.0 / 255.0));
+}
+
+float4 RgbaToYCbCr(float4 rgba)
+{
+	float3 yCbCr = RgbToYCbCr(rgba.rgb);
+	return float4(yCbCr.x, yCbCr.y, yCbCr.z, rgba.a);
+}
+
+float4 YCbCrToRgba(float4 yCbCr)
+{
+	float3 rgb = YCbCrToRgb(yCbCr.rgb);
+	return float4(rgb.r, rgb.g, rgb.b, yCbCr.a);
+}
+
+////////////////////////////////////////
+
+float3 RgbToCmy(float3 rgb)
+{
+	return 1 - rgb;
+}
+
+float3 CmyToRgb(float3 cmy)
+{
+	return 1 - cmy;
+}
+
+float4 CmyToCmyk(float3 cmy)
+{
+	float k = 1.0;
+	k = min(k, cmy.x);
+	k = min(k, cmy.y);
+	k = min(k, cmy.z);
+	float4 cmyk;
+	if (k > 0.0)
+		cmyk.xyz = (cmy - k) / (1.0 - k);
+	else
+		cmyk.xyz = 0.0;
+	cmyk.w = k;
+	return cmyk;
+}
+
+float3 CmykToCmy(float4 cmyk)
+{
+	float3 k = cmyk.www;
+	return cmyk.xyz * (1 - k) + k;
+}
+
+float4 RgbToCmyk(float3 rgb)
+{
+	return CmyToCmyk(RgbToCmy(rgb));
+}
+
+float3 CmykToRgb(float4 cmyk)
+{
+	return CmyToRgb(CmykToCmy(cmyk));
+}
+
+////////////////////////////////////////
 
 // http://lolengine.net/blog/2013/07/27/rgb-to-hsv-in-glsl
 float3 RgbToHsv(float3 rgb) 

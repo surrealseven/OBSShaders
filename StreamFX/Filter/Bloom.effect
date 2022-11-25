@@ -1,0 +1,155 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+
+
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+uniform float Threshold <
+	string name = "Threshold";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.5;
+
+uniform float Smoothing <
+	string name = "Smoothing";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.1;
+
+uniform float Strength <
+	string name = "Strength";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 2;
+> = 0.5;
+
+uniform int BlurQuality <
+	string name = "Blur Quality";
+	string field_type = "slider";	
+	int minimum = 1;
+	int maximum = 16;
+> = 3;
+
+uniform int BlurSize <
+	string name = "Blur Size";
+	string field_type = "slider";	
+	int minimum = 2;
+	int maximum = 64;
+> = 24;
+
+uniform int BlurSteps <
+	string name = "Blur Steps";
+	string field_type = "slider";
+	int minimum = 1;
+	int maximum = 32;
+> = 16;
+
+
+float4 FetchBloom(float2 uv)
+{
+	float4 color;
+	
+	const int kernelSize = 12;
+
+	float upperThreshold = Threshold + (1 - Threshold) * Smoothing;
+
+	color = InputA.Sample(def_sampler, uv);
+	for (int u = -kernelSize / 2; u < (kernelSize + 1) / 2; u++)
+	{
+		for (int v = -kernelSize / 2; v < (kernelSize + 1) / 2; v++)
+		{
+			float2 offset = (float2(u, v) * 4.0 - 0.5) * ViewSize.zw;
+			float4 c = InputA.Sample(def_sampler, uv + offset);
+			float luma = RgbToLuma(c.rgb);
+
+			float t = smoothstep(Threshold, upperThreshold, luma);
+			
+			color += c * t;
+		}
+	}
+
+	color /= kernelSize * kernelSize;
+
+	return color;
+}
+
+float4 FetchGaussianBloom(float2 uv)
+{
+	float2 radius = (float)BlurSize * ViewSize.zw;
+
+	float4 color = InputA.Sample(def_sampler, uv);
+
+	float upperThreshold = Threshold + (1 - Threshold) * Smoothing;
+
+	for (int j = 0; j < BlurSteps; j++)
+	{
+		float d = PI * 2 * j / BlurSteps;
+		float2 dcs = float2(cos(d), sin(d)) * radius;
+		float invQuality = 1.0 / BlurQuality;
+
+		for (int i = 1; i <= BlurQuality; i++)
+		{
+			float q = invQuality * i;
+
+			float4 c = InputA.Sample(def_sampler, uv + dcs * q);
+			float luma = RgbToLuma(c.rgb);
+			float t = smoothstep(Threshold, upperThreshold, luma);
+			
+			color += c * t;
+		}
+	}
+	
+	color /= BlurQuality * BlurSteps + 1;
+	return color;
+}
+
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 PSDefault(VertData v_in) : TARGET 
+{	
+	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	
+	float4 blurred = FetchGaussianBloom(v_in.uv);
+
+	float blurredLuma = RgbToLuma(blurred.rgb);
+
+	color.rgb = saturate(color.rgb + blurred.rgb * Strength);
+	// color.rgb = blurred.rgb * Strength;
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

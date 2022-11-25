@@ -29,7 +29,6 @@ VertData VSDefault(VertData v_in)
 float4 PSDefault(VertData v_in) : TARGET 
 {	
 	float4 color = InputA.Sample(def_sampler, v_in.uv);
-	
 
 	return color;
 }

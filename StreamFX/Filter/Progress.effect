@@ -11,6 +11,17 @@ uniform float Progress <
 	float maximum = 1;
 > = 1;
 
+uniform float Smooth <
+	string name = "Smoothing";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0;
+
+uniform bool Reverse <
+> = false;
+
 uniform float4 BackgroundColor <
 	string name = "Background Color";
 	string field_type = "slider";
@@ -39,46 +50,78 @@ VertData VSDefault(VertData v_in)
 	return vert_out;
 }
 
-float4 PSSwipe(VertData v_in) : TARGET 
-{	
-	float4 color = InputA.Sample(def_sampler, v_in.uv);
-
-	float clip = step(v_in.uv.x, Progress);
-	color *= clip;
-	color += BackgroundColor * (1 - clip);
-
-	return color;
-}
-
-float4 PSSlide(VertData v_in) : TARGET
+float4 CalculateColor(float2 uv, float progress)
 {
-	float2 uv = v_in.uv + (1 - Progress);
-
+	if (Reverse)
+		progress = 1.0 - progress;
 	float4 color = InputA.Sample(def_sampler, uv);
-
-	float clip = step(uv.x, 1);
-	color *= clip;
-	color += BackgroundColor * (1 - clip);
-
+	float t = smoothstep(Progress, Progress + Smooth * 0.25, progress);
+	color = lerp(color, BackgroundColor, t);
 	return color;
 }
 
 
+float4 PSSwipeX(VertData v_in) : TARGET
+{
+	return CalculateColor(v_in.uv, v_in.uv.x);
+}
 
-technique Swipe
+float4 PSSwipeY(VertData v_in) : TARGET
+{
+	return CalculateColor(v_in.uv, 1.0 - v_in.uv.y);
+}
+
+float4 PSSlideX(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv;
+	uv.x += (Reverse) ? Progress - 1 : 1 - Progress;
+	return CalculateColor(uv, v_in.uv.x);
+}
+
+float4 PSSlideY(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv;
+	uv.y += (Reverse) ? 1 - Progress : Progress - 1;
+	return CalculateColor(uv, 1 - v_in.uv.y);
+}
+
+
+
+
+
+technique SwipeX
 {
 	pass
 	{
 		vertex_shader = VSDefault(v_in);
-		pixel_shader  = PSSwipe(v_in); 
+		pixel_shader  = PSSwipeX(v_in); 
 	}
 }
 
-technique Slide
+technique SwipeY
 {
 	pass
 	{
 		vertex_shader = VSDefault(v_in);
-		pixel_shader = PSSlide(v_in);
+		pixel_shader = PSSwipeY(v_in);
+	}
+}
+
+technique SlideX
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSSlideX(v_in);
+	}
+}
+
+
+technique SlideY
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSSlideY(v_in);
 	}
 }

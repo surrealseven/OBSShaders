@@ -43,6 +43,14 @@ uniform float SaturationSmooth <
 	float maximum = 1;
 > = 0;
 
+uniform float SaturationBoost <
+	string name = "Saturation Boost";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0;
+
 uniform float Strength <
 	string name = "Strength";
 	string field_type = "slider";
@@ -91,10 +99,9 @@ float4 PSDefault(VertData v_in) : TARGET
 	float3 hsv = RgbToHsv(color.rgb);
 
 	float luma = RgbToLuma(color.rgb);
-	hsv.z = luma;
 
-	float value = hsv.z * 2.0 - 1.0;
-	hsv.z = pow(abs(value), 1.0 - Contrast) * sign(value) * 0.5 + 0.5;
+	float value = luma * 2.0 - 1.0;
+	luma = pow(abs(value), 1.0 - Contrast) * sign(value) * 0.5 + 0.5;
 
 	float dist = min(abs(hsv.x - Hue * 0.5), abs(1.0 - hsv.x + Hue * 0.5));
 
@@ -102,7 +109,15 @@ float4 PSDefault(VertData v_in) : TARGET
 	t *= smoothstep(MinSaturation - SaturationSmooth * 0.5, MinSaturation, hsv.y);
 	t = 1.0 - ((1.0 - t) * Strength);
 
-	color.rgb = lerp(hsv.zzz, color.rgb, t);
+
+	float3 noirColor = lerp(luma, color.rgb, t);
+
+	//hsv.x = Hue;
+	//hsv.y = 1.0 - pow(1.0 - hsv.y, SaturationBoost * 4 + 1);
+	//hsv.z = 1.0 - pow(1.0 - hsv.z, SaturationBoost * 4 + 1);
+	//noirColor = lerp(noirColor, HsvToRgb(hsv), 1);
+
+	color.rgb = lerp(noirColor, color.rgb, t);
 
 	return color;
 }

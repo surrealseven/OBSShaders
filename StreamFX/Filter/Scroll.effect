@@ -3,6 +3,14 @@
 
 
 
+uniform float XOffset <
+	string name = "Horizontal Offset";
+	string field_type = "slider";
+	string suffix = " pixels";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 0;
 
 uniform float XSpeed <
 	string name = "Horizontal Speed";
@@ -17,6 +25,15 @@ uniform int XStep <
 	string suffix = " pixels";
 	int minimum = 0;
 	int maximum = 4098;
+> = 0;
+
+uniform float YOffset <
+	string name = "Vertical Offset";
+	string field_type = "slider";
+	string suffix = " pixels";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
 > = 0;
 
 uniform float YSpeed <
@@ -78,7 +95,7 @@ float4 PSDefault(VertData v_in) : TARGET
 
 	// we do this fmod to ensure the quantization step works on a decent number range.
 	// over time there isn't enough floating point precision and artifacts manifest.
-	float2 offset = fmod(Time.x * speed, ViewSize.xy * 2);
+	float2 offset = float2(XOffset, YOffset) * ViewSize.xy + fmod(Time.x * speed, ViewSize.xy * 2);
 	if (XStep > 0)
 		offset.x = trunc(offset.x / XStep) * XStep;
 	if (YStep > 0)
