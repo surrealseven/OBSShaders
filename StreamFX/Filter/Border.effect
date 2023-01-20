@@ -32,16 +32,33 @@ uniform texture2d BorderTexture <
 >;
 
 uniform float BorderAlpha <
+	string name = "Border Alpha";
 	string field_type = "slider";
 	float minimum = 0.0;
 	float maximum = 1.0;
 > = 1.0;
 
 uniform float CornerRadius <
+	string name = "Corner Radius";
 	string field_type = "slider";
 	float minimum = 0.0;
 	float maximum = 600.0;
 > = 50.0;
+
+uniform float HorizontalPadding <
+	string name = "Horizontal Padding";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1000.0;
+> = 0.0;
+
+uniform float VerticalPadding <
+	string name = "Vertical Padding";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1000.0;
+> = 0.0;
+
 
 uniform bool FitContent = true;
 
@@ -78,6 +95,9 @@ float3 CalculateColorContributions(VertData v_in)
 	float2 pos = uv * ViewSize.xy;
 	// pos.x *= ViewSize.x / ViewSize.y;  // <-- applying aspect ratio or not seems to be dependent on the type of transform applied to the source
 
+	pos.x -= HorizontalPadding;
+	pos.y -= VerticalPadding;	
+
 	// first calculate alpha which will define the outer shape
 	float2 radiusCenter = max(pos, cornerRadius);
 	float dist = distance(radiusCenter, pos);
@@ -94,13 +114,27 @@ float3 CalculateColorContributions(VertData v_in)
 	return float3(contentMultiplier, borderMultiplier, alpha);
 }
 
+float2 CalculateSourceCoordinates(VertData v_in)
+{
+	float2 uv = v_in.uv;
+
+	if (FitContent)
+	{
+		float scale = min(ViewSize.x / (ViewSize.x - (BorderPixels + HorizontalPadding) * 2), 
+						  ViewSize.y / (ViewSize.y - (BorderPixels + VerticalPadding) * 2));
+		uv = (uv - 0.5) * scale + 0.5;
+	}
+
+	return uv;
+}
+
 float4 PSBorderTexture(VertData v_in) : TARGET
 {
 	float3 contributions = CalculateColorContributions(v_in);
 
 	float4 borderColor = BorderTexture.Sample(def_sampler, v_in.uv) * contributions.y;
 	borderColor.a *= BorderAlpha;
-	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	float4 color = InputA.Sample(def_sampler, CalculateSourceCoordinates(v_in));
 	float4 bgColor = BackgroundColor;
 	color = lerp(bgColor, color, color.a) * contributions.x;
 	color = color + borderColor;
@@ -115,7 +149,7 @@ float4 PSBorderColor(VertData v_in) : TARGET
 	float3 contributions = CalculateColorContributions(v_in);
 
 	float4 borderColor = BorderColor * contributions.y;
-	float4 color = InputA.Sample(def_sampler, v_in.uv);
+	float4 color = InputA.Sample(def_sampler, CalculateSourceCoordinates(v_in));
 	float4 bgColor = BackgroundColor;
 	color = lerp(bgColor, color, color.a) * contributions.x;
 	color = color + borderColor;

@@ -20,6 +20,7 @@
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Bloom.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Pixelate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Halftone.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Rage.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\SrlFilterEffect.h" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Progress.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Rotate.effect" />
