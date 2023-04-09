@@ -60,7 +60,14 @@ uniform float VerticalPadding <
 > = 0.0;
 
 
-uniform bool FitContent = true;
+uniform bool FitContent = false;
+
+uniform float ContentScale <
+	string name = "Content Scale";
+	string field_type = "slider";
+	float minimum = 1.0;
+	float maximum = 2.0;
+> = 1.0;
 
 
 // ---------- Shader Code
@@ -118,12 +125,15 @@ float2 CalculateSourceCoordinates(VertData v_in)
 {
 	float2 uv = v_in.uv;
 
+	float scale = 1 / ContentScale;
+
 	if (FitContent)
 	{
-		float scale = min(ViewSize.x / (ViewSize.x - (BorderPixels + HorizontalPadding) * 2), 
-						  ViewSize.y / (ViewSize.y - (BorderPixels + VerticalPadding) * 2));
-		uv = (uv - 0.5) * scale + 0.5;
+		scale *= min(ViewSize.x / (ViewSize.x - (BorderPixels + HorizontalPadding) * 2), 
+				       ViewSize.y / (ViewSize.y - (BorderPixels + VerticalPadding) * 2));		
 	}
+
+	uv = (uv - 0.5) * scale + 0.5;
 
 	return uv;
 }
