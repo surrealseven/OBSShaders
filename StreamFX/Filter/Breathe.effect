@@ -1,0 +1,132 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+uniform float Frequency <
+	string name = "Frequency";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 20;
+> = 1;
+
+uniform float Scale <
+	string name = "Scale";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
+
+uniform float Phase <
+	string name = "Phase";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
+
+
+uniform float NoiseScale <
+	string name = "Noise Scale";
+	string field_type = "slider";
+	float step = 0.001;
+	float minimum = 0;
+	float maximum = 0.1;
+> = 0;
+
+uniform float CenterX <
+	string name = "Center X";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.5;
+
+uniform float CenterY <
+	string name = "Center Y";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.5;
+
+
+#define BORDERTYPE_NONE		0
+#define BORDERTYPE_WRAP		1
+#define BORDERTYPE_CLAMP	2
+#define BORDERTYPE_MIRROR	3
+
+uniform int BorderType <
+	string name = "Border Type";
+	string field_type = "enum";
+	int enum_0 = BORDERTYPE_NONE;
+	string enum_0_name = "None";
+	int enum_1 = BORDERTYPE_WRAP;
+	string enum_1_name = "Wrap";
+	int enum_2 = BORDERTYPE_CLAMP;
+	string enum_2_name = "Clamp";	
+	int enum_3 = BORDERTYPE_MIRROR;
+	string enum_3_name = "Mirror";
+> = 0;
+
+
+
+#define PI 3.14159265359
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float4 rand = float4(Random[0][2], Random[1][2], Random[2][2], Random[3][2]);
+
+
+	float scale = 1.0 - (sin(Time.x * Frequency + Phase * PI * 2) * 0.5 + 0.5) * Scale;
+
+	scale += (rand.x * 2 - 1) * NoiseScale;
+	scale = max(scale, 0.0);
+
+	float2 center = float2(CenterX, CenterY);
+	float2 uv = (v_in.uv - center) / scale + center;
+
+	if (BorderType == BORDERTYPE_WRAP)
+		uv = frac(uv);
+	else if (BorderType == BORDERTYPE_CLAMP)
+		uv = saturate(uv);
+	else if (BorderType == BORDERTYPE_MIRROR)
+		uv = abs(abs(uv - 1) - 1);
+
+	float clip = step(0, uv.x) * step(uv.x, 1) * step(0, uv.y) * step(uv.y, 1);
+
+	float4 color = InputA.Sample(def_sampler, uv) * clip;
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

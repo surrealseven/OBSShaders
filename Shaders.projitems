@@ -11,7 +11,9 @@
   <ItemGroup>
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\AlphaGradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\BadPixelRemoval.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\ColorShift.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Blink.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Glitch.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Border.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Dither.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\DMD.effect" />
@@ -32,6 +34,7 @@
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\FilterTemplate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Vignette.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Warp.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Breathe.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Wobble.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Gradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Hypnotic.effect" />
