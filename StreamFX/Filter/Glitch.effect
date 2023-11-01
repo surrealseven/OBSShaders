@@ -1,0 +1,80 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+
+//float hash1(uint n)
+//{
+//	// integer hash copied from Hugo Elias
+//	n = (n << 13U) ^ n;
+//	n = n * (n * n * 15731U + 789221U) + 1376312589U;
+//	return float(n & uint(0x7fffffffU)) / float(0x7fffffff);
+//}
+
+float Hash12(float2 p)
+{
+	float3 p3 = frac(float3(p.xyx) * 0.1031);
+	p3 += dot(p, p3.yzx + 33.33);
+	return frac((p3.x + p3.y) * p3.z);
+}
+
+float2 GetTileCenter(float2 uv, float tileSize)
+{
+	float aspect = ViewSize.x / ViewSize.y;
+	uv -= 0.5;
+	uv.x *= aspect;
+
+	float scale = ViewSize.z * tileSize;
+	float2 tileCenter = (floor(uv / scale) + 0.5) * scale;
+	float2 tileToTexel = abs(tileCenter - uv);
+	tileCenter.x /= aspect;
+	tileCenter += 0.5;
+	return tileCenter;
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 tileCenter = GetTileCenter(v_in.uv, 64);
+
+	float t = Hash12(frac((tileCenter + 0.5) * trunc(Time.x * 2)));
+
+	float2 uv = v_in.uv;
+	if (t < 0.1)
+	{
+		uv.x += 0.1;
+	}
+
+	float4 color = InputA.Sample(def_sampler, uv);
+
+
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSDefault(v_in);
+	}
+}

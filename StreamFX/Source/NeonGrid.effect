@@ -1,0 +1,150 @@
+// include filter shader variables
+#include "SrlSourceEffect.h"
+
+
+
+
+#define PI		3.14159265359
+#define DEG2RAD	PI / 180
+
+
+// ---------- Shader Code
+sampler_state def_sampler{
+	AddressU = Clamp;
+	AddressV = Clamp;
+	Filter = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = v_in.uv;
+	return vert_out;
+}
+
+
+uniform float XSpeed <
+	string name = "X Speed";
+	string field_type = "slider";
+	float minimum = -5;
+	float maximum = 5;
+	float step = 0.01;
+> = 0;
+
+uniform float YSpeed <
+	string name = "Y Speed";
+	string field_type = "slider";
+	float minimum = -5;
+	float maximum = 5;
+	float step = 0.01;
+> = 0.1;
+
+uniform float XFreq <
+	string name = "X Frequency";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 10;
+	float step = 0.01;
+> = 1.5;
+
+uniform float YFreq <
+	string name = "Y Frequency";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 30;
+	float step = 0.01;
+> = 10;
+
+uniform float ZHeight <
+	string name = "Z Height";
+	string field_type = "slider";
+	float minimum = -1;
+	float maximum = 1;
+	float step = 0.01;
+> = 0;
+
+uniform float Perspective <
+	string name = "Perspective";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 0.9;
+
+uniform float Thickness <
+	string name = "Thickness";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 0.5;
+
+uniform float3 Color <
+	string name = "Color";
+	string field_type = "slider";
+	float3 minimum = { 0, 0, 0 };
+	float3 maximum = { 3, 3, 3 };
+	float step = 0.01;
+> = { 1.5, 1, 1.5 };
+
+uniform float4 Background <
+	string name = "Background";
+	string field_type = "slider";
+	float4 minimum = { 0, 0, 0, 0 };
+	float4 maximum = { 1, 1, 1, 1 };
+	float step = 0.01;
+> = { 0, 0, 0, 1 };
+
+
+uniform float Opacity <
+	string name = "Opacity";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 1;
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv * 2 - 1;
+	uv.x *= ViewSize.x * ViewSize.w;
+	uv.y -= ZHeight;
+
+	float d = length(uv);
+	
+	float fovT = lerp(0.0, 0.99, Perspective);
+	float z = max(((uv.y - 1) * 0.5 + 0.5), 0) * fovT + (1 - fovT);
+	
+	float px = uv.x / z;
+	float py = uv.y / z;	
+
+	float xLine = abs(frac((px + Time.x * XSpeed) * XFreq) * 2 - 1);
+	float yLine = abs(frac((py + Time.x * -YSpeed) * YFreq) * 2 - 1);
+
+	float thickness = lerp(0.001, 0.1, Thickness);
+	d = saturate((thickness / xLine) + (thickness / yLine));
+	d *= smoothstep(0, 0.5, uv.y);
+
+	// d = sin(d * 8 + Time.x) / 8;
+	// d = abs(d);
+	// d = 0.18 / d;
+
+	float4 color = lerp(Background, float4(Color, 1), d);
+	color.a *= Opacity;
+	return color;
+}
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader = PSDefault(v_in);
+	}
+}

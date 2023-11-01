@@ -9,10 +9,14 @@
     <Import_RootNamespace>Shaders</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\filter\Warp.effect" />
+    <None Include="$(MSBuildThisFileDirectory)shaderfilter\filter\Gradient.effect" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\EffectTemplate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\AlphaGradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\BadPixelRemoval.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\ColorShift.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Blink.effect" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\VHS.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Glitch.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Border.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\Dither.effect" />
@@ -40,11 +44,15 @@
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Hypnotic.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\Spiral.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\SrlSourceEffect.h" />
+    <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\NeonGrid.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Source\TwilightZone.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\SrlCommon.h" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\DoomTransition.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\SrlTransitionEffect.h" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\TransitionTemplate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\WaveTransition.effect" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="$(MSBuildThisFileDirectory)ShaderFilter\Source\" />
   </ItemGroup>
 </Project>

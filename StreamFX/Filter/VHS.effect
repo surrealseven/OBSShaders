@@ -1,0 +1,355 @@
+// include filter shader variables
+#include "SrlFilterEffect.h"
+
+
+uniform float Strength <
+	string name = "Strength";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 1;
+
+uniform float Curvature <
+	string name = "Curvature";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = -0.75;
+	float maximum = 1;
+> = 0.5;
+
+uniform float Fade <
+	string name = "Fade";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.1;
+
+uniform float Desaturation <
+	string name = "Desaturation";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.0;
+
+uniform float ChromaDistortion <
+	string name = "Chroma Distortion";
+	string field_type = "slider";
+	float step = 0.01;
+	float minimum = 0;
+	float maximum = 1;
+> = 0.0;
+
+uniform float4 BorderColor <
+	string name = "Border Color";
+	string field_type = "slider";
+	float4 minimum = { 0.0, 0.0, 0.0, 0.0 };
+	float4 maximum = { 1.0, 1.0, 1.0, 1.0 };
+> = { 0.0, 0.0, 0.0, 1.0 };
+
+uniform float2 OffsetR <
+	string name = "R Offset";
+	string field_type = "slider";
+	float2 minimum = { -1.0, -1.0 };
+	float2 maximum = { 1.0, 1.0 };
+> = { 0.0, 0.0 };
+
+uniform float2 OffsetG <
+	string name = "G Offset";
+	string field_type = "slider";
+	float2 minimum = { -1.0, -1.0 };
+	float2 maximum = { 1.0, 1.0 };
+> = { 0.0, 0.0 };
+
+uniform float2 OffsetB <
+	string name = "B Offset";
+	string field_type = "slider";
+	float2 minimum = { -1.0, -1.0 };
+	float2 maximum = { 1.0, 1.0 };
+> = { 0.0, 0.0 };
+
+uniform float2 OffsetU <
+	string name = "U Offset";
+	string field_type = "slider";
+	float2 minimum = { -1.0, -1.0 };
+	float2 maximum = { 1.0, 1.0 };
+> = { 0.0, 0.0 };
+
+uniform float2 OffsetV <
+	string name = "V Offset";
+	string field_type = "slider";
+	float2 minimum = { -1.0, -1.0 };
+	float2 maximum = { 1.0, 1.0 };
+> = { 0.0, 0.0 };
+
+uniform float ChromaticDistort <
+	string name = "Chromatic Aberration";
+	string field_type = "slider";
+	float minimum = -1.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float ScanlineCount <
+	string name = "Scanline Count";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 500.0;
+> = 0.0;
+
+uniform float ScanlineMoire <
+	string name = "Scanline Moire";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float Flicker <
+	string name = "Flicker";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float HorizontalHold <
+	string name = "Horizontal Hold";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float VerticalHold <
+	string name = "Vertical Hold";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+uniform float RollBarSpeed <
+	string name = "Roll Bar Speed";
+	string field_type = "slider";
+	float minimum = -2.0;
+	float maximum = 2.0;
+> = 0.2;
+
+uniform float RollBarDepth <
+	string name = "Roll Bar Depth";
+	string field_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+> = 0.0;
+
+
+// ---------- Shader Code
+sampler_state def_sampler {
+	AddressU  = Clamp;
+	AddressV  = Clamp;
+	Filter    = Linear;
+};
+
+struct VertData {
+	float4 pos : POSITION;
+	float2 uv  : TEXCOORD0;
+};
+
+VertData VSDefault(VertData v_in) 
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv  = v_in.uv;
+	return vert_out;
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// The MIT License
+// Copyright © 2013 Inigo Quilez
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+float3 hash3( float3 p ) // replace this by something better
+{
+	p = float3( dot(p, float3(127.1,311.7, 74.7)),
+					dot(p, float3(269.5,183.3,246.1)),
+					dot(p, float3(113.5,271.9,124.6)));
+
+	return -1.0 + 2.0 * frac(sin(p) * 43758.5453123);
+}
+
+float noise3d( float3 p )
+{
+	float3 i = floor( p );
+	float3 f = frac( p );
+
+    // quintic interpolant
+	 // float3 u = f*f*f*(f*(f*6.0-15.0)+10.0);
+
+	 // cubic interpolant
+	 float3 u = f*f*(3.0-2.0*f);
+    
+
+    return lerp(lerp(lerp( dot(hash3( i + float3(0.0,0.0,0.0) ), f - float3(0.0,0.0,0.0) ),
+                           dot(hash3( i + float3(1.0,0.0,0.0) ), f - float3(1.0,0.0,0.0) ), u.x),
+						   lerp( dot(hash3( i + float3(0.0,1.0,0.0) ), f - float3(0.0,1.0,0.0) ),
+                           dot(hash3( i + float3(1.0,1.0,0.0) ), f - float3(1.0,1.0,0.0) ), u.x), u.y),
+				    lerp(lerp( dot(hash3( i + float3(0.0,0.0,1.0) ), f - float3(0.0,0.0,1.0) ),
+                           dot(hash3( i + float3(1.0,0.0,1.0) ), f - float3(1.0,0.0,1.0) ), u.x),
+						   lerp( dot(hash3( i + float3(0.0,1.0,1.0) ), f - float3(0.0,1.0,1.0) ),
+                           dot(hash3( i + float3(1.0,1.0,1.0) ), f - float3(1.0,1.0,1.0) ), u.x), u.y), u.z );
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// The MIT License
+// Copyright © 2013 Inigo Quilez
+// Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+// https://www.youtube.com/c/InigoQuilez
+// https://iquilezles.org
+
+// Simplex Noise (http://en.wikipedia.org/wiki/Simplex_noise), a type of gradient noise
+// that uses N+1 vertices for random gradient interpolation instead of 2^N as in regular
+// latice based Gradient Noise.
+
+// All noise functions here:
+//
+// https://www.shadertoy.com/playlist/fXlXzf&from=0&num=12
+
+float2 hash(float2 p) // replace this by something better
+{
+	p = float2(dot(p, float2(127.1, 311.7)), dot(p, float2(269.5, 183.3)));
+	return -1.0 + 2.0 * frac(sin(p) * 43758.5453123);
+}
+
+float hash(float p)
+{
+	return hash(float2(p, p)).x;
+}
+
+float simplex2d(float2 p)
+{
+	const float K1 = 0.366025404; // (sqrt(3)-1)/2;
+	const float K2 = 0.211324865; // (3-sqrt(3))/6;
+
+	float2  i = floor(p + (p.x + p.y) * K1);
+	float2  a = p - i + (i.x + i.y) * K2;
+	float m = step(a.y, a.x);
+	float2  o = float2(m, 1.0 - m);
+	float2  b = a - o + K2;
+	float2  c = a - 1.0 + 2.0 * K2;
+	float3  h = max(0.5 - float3(dot(a, a), dot(b, b), dot(c, c)), 0.0);
+	float3  n = h * h * h * h * float3(dot(a, hash(i + 0.0)), dot(b, hash(i + o)), dot(c, hash(i + 1.0)));
+	return dot(n, float3(70, 70, 70));
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//float4 FetchDistortedColor(float2 uv, float2 offset, float scale, float dist)
+//{
+//	float2 center = float2(0.5, 0.5);
+//	uv = uv - center;
+//	uv += offset * 0.01 * Strength;
+//	uv += uv * dist * (ChromaticDistort * scale) * Strength;
+//	uv = uv + center;
+//
+//	float4 yColor = RgbaToYuv(InputA.Sample(def_sampler, uv));
+//	float4 uColor = RgbaToYuv(InputA.Sample(def_sampler, uv + OffsetU * 0.01 * Strength));
+//	float4 vColor = RgbaToYuv(InputA.Sample(def_sampler, uv + OffsetV * 0.01 * Strength));
+//	return YuvToRgba(float4(yColor.x, uColor.y, vColor.z, yColor.a));
+//}
+
+float2x2 MakeRotation2D(float angle)
+{
+	float s, c;
+	sincos(angle, s, c);
+	float2x2 mat = { c, -s, s, c };
+	return mat;
+}
+//
+//
+//float GetNoise(float frame, float2 uv)
+//{
+//	float2 seed = float2(uv.x, uv.y * ViewSize.y * ViewSize.z * 8) * 10;
+//	seed += hash(float2(frame * 0.3923, frame * 0.132));
+//	float rot = hash(frame * 0.32423);
+//	seed = mul(seed, MakeRotation2D(rot * PI * 2 * 20));
+//	return simplex2d(seed) * 0.5 + 0.5;
+//}
+
+float random2d(float2 seed) 
+{
+	return frac(sin(dot(seed, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
+float4 PSDefault(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv;
+
+	float4 srcColor = InputA.Sample(def_sampler, uv);
+	float4 color = srcColor;
+
+	
+	float scanLines = 20;
+	//uv.y = trunc(uv.y * scanLines) / scanLines;
+
+	uv = mul(uv, MakeRotation2D(0));
+
+	float fps = 1;
+	float frame = trunc(fmod(Time.x * fps, 1024));
+
+	float3 noiseScale = float3(20, scanLines, frame);
+
+	float noise = noise3d(float3(uv.x, uv.y, 1) * noiseScale) * 0.5 + 0.5;
+	float noiseP1 = noise3d(float3(uv.x + ViewSize.z, uv.y, 1) * noiseScale) * 0.5 + 0.5;
+
+	float noiseO2 = noise3d(float3(uv.x * 0.5, uv.y * 0.5, 1) * noiseScale) * 0.5 + 0.5;
+
+	float thresh = 0.6;
+
+	//if (noise < thresh)
+	//	noise = 0;
+
+	//if ((noise >= thresh) && (noise <= noiseP1))
+	//	noise = 0;
+
+	//noise = 1;
+	//if (uv.x > frame * ViewSize.z)
+	//	noise = 0;
+
+	color.rgb = noise;
+
+	// uv = trunc(uv * 200) / 200;
+
+	// color.rgb = random2d(uv * 0.3);	
+	float seedScale = frac(Time.x * 0.01);
+	float2 seed = uv * lerp(1, 1, seedScale);
+
+	if (uv.y < 0.1)
+	{
+		color.rgb = step(uv.x, seedScale);
+	}
+	//else if (uv.y < 0.2)
+	//{
+	//	color.rgb = step(uv.y, seed.y);
+	//}
+	else
+	{
+		seed = mul(seed, MakeRotation2D(0.15));
+		color.rgb = random2d(seed);
+	}
+	// color = lerp(srcColor, color, color.r * 0.7);
+	
+	color = lerp(srcColor, color, Strength) * 1;
+	
+	return color;
+}
+
+// https://thebookofshaders.com/11/
+// https://iquilezles.org/articles/functions/
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = VSDefault(v_in);
+		pixel_shader  = PSDefault(v_in); 
+	}
+}

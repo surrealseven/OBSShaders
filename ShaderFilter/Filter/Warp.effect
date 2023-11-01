@@ -1,0 +1,208 @@
+// Template for new shaders
+
+// view/projection matrix
+uniform float4x4 ViewProj;
+
+// source image texture
+uniform texture2d image;
+
+// time in seconds since the filter was created
+uniform float elapsed_time;
+
+// random float represneting the local time
+uniform float local_time;
+
+// count of how many times the shader has rendered a page
+uniform int loops;
+
+// per frame random number between 0 and 1
+uniform float rand_f;
+
+// per activation, load, or change of settings random number between 0 and 1
+uniform float rand_activation_f;
+
+// per instance on load random number between 0 and 1
+uniform float rand_instance_f;
+
+// size in uv coordinates of each texel (inverse of uv_size)
+uniform float2 uv_pixel_interval;
+
+// width and height in pixels of the screen
+uniform float2 uv_size;
+
+
+
+uniform bool MaintainAspect <
+	string label = "Maintain Aspect Ratio";
+> = true;
+
+uniform float Speed1 <
+	string label = "Speed 1";
+	string widget_type = "slider";
+	float minimum = -2.0;
+	float maximum = 2.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float Speed2 <
+	string label = "Speed 2";
+	string widget_type = "slider";
+	float minimum = -2.0;
+	float maximum = 2.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float Speed3 <
+	string label = "Speed 3";
+	string widget_type = "slider";
+	float minimum = -2.0;
+	float maximum = 2.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float Speed4 <
+	string label = "Speed 4";
+	string widget_type = "slider";
+	float minimum = -2.0;
+	float maximum = 2.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float CyclePhase <
+	string label = "Cycle Phase";
+	string widget_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float RotationsPerSecond <
+	string label = "Rotations Per Second";
+	string widget_type = "slider";
+	float minimum = -10.0;
+	float maximum = 10.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float RotationPhase <
+	string label = "Rotation Phase";
+	string widget_type = "slider";
+	float minimum = 0.0;
+	float maximum = 1.0;
+	float step = 0.01;
+> = 0.0;
+
+uniform float Zoom <
+	string label = "Zoom";
+	string widget_type = "slider";
+	float minimum = 0.1;
+	float maximum = 10.0;
+	float step = 0.01;
+> = 1.0;
+
+
+uniform int ColorCount <
+	string label = "Color Count";
+	string widget_type = "slider";
+	int minimum = 2;
+	int maximum = 8;
+> = 2;
+
+uniform bool WrapColors <
+	string label = "Wrap Colors";
+> = false;
+
+uniform float4 Color1 <
+	string name = "Color 1";
+> = { 0, 0, 0, 1 };
+ 
+uniform float4 Color2 <
+	string name = "Color 2";
+> = { 1, 1, 1, 1 };
+
+uniform float4 Color3 <
+	string name = "Color 3";
+> = { 1, 1, 1, 1 };
+
+uniform float4 Color4 <
+	string name = "Color 4";
+> = { 1, 1, 1, 1 };
+
+uniform float4 Color5 <
+	string name = "Color 5";
+> = { 1, 1, 1, 1 };
+
+uniform float4 Color6 <
+	string name = "Color 6";
+> = { 1, 1, 1, 1 };
+
+uniform float4 Color7 <
+	string name = "Color 7";
+> = { 1, 1, 1, 1 };
+
+uniform float4 Color8 <
+	string name = "Color 8";
+> = { 1, 1, 1, 1 };
+
+
+sampler_state textureSampler
+{
+	Filter = Linear;
+	AddressU = Wrap;
+	AddressV = Wrap;
+	BorderColor = 00000000;
+};
+
+struct VertData
+{
+	float4 pos : POSITION;
+	float2 uv : TEXCOORD0;
+};
+
+#define PI		3.141592653589
+#define TWOPI	6.283185307179
+#define HALFPI 1.570796326794
+
+#define Remap(destA, destB, srcA, srcB, t)  lerp(destA, destB, (t - srcA) / (srcB - srcA))
+
+float4 mainImage(VertData v_in) : TARGET
+{
+	float2 uv = v_in.uv;
+
+	uv.x += 0.1 * sin(6.0 * uv.y + Speed1 * elapsed_time);
+	uv.y += 0.5 * sin(4.0 * uv.x + Speed2 * elapsed_time);
+	uv.x += 0.2 * sin(5.0 * uv.y + Speed3 * elapsed_time);
+	uv.y += 0.3 * sin(3.0 * uv.x + Speed4 * elapsed_time);
+
+	float4 color = image.Sample(textureSampler, uv);
+
+	return color;
+}
+
+
+
+// offset which should be applied to the uv coordinates of the vertices
+uniform float2 uv_offset;
+
+// scale which should be applied to the uv coordinates of the vertices
+uniform float2 uv_scale;
+
+VertData mainTransform(VertData v_in)
+{
+	VertData vert_out;
+	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
+	vert_out.uv = v_in.uv * uv_scale + uv_offset;
+	return vert_out;
+}
+
+
+technique Draw
+{
+	pass
+	{
+		vertex_shader = mainTransform(v_in);
+		pixel_shader = mainImage(v_in);
+	}
+}
+
+

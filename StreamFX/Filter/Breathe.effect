@@ -16,7 +16,7 @@ uniform float Scale <
 	float step = 0.01;
 	float minimum = 0;
 	float maximum = 1;
-> = 1;
+> = 0.1;
 
 uniform float Phase <
 	string name = "Phase";
