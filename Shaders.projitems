@@ -9,8 +9,8 @@
     <Import_RootNamespace>Shaders</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\filter\Warp.effect" />
-    <None Include="$(MSBuildThisFileDirectory)shaderfilter\filter\Gradient.effect" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter\Warp.effect" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter\Gradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)ShaderFilter\EffectTemplate.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\AlphaGradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\BadPixelRemoval.effect" />
@@ -53,6 +53,6 @@
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\WaveTransition.effect" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)ShaderFilter\Source\" />
+    <Folder Include="$(MSBuildThisFileDirectory)ShaderFilter\Transition\" />
   </ItemGroup>
 </Project>
