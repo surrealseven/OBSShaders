@@ -9,9 +9,14 @@
     <Import_RootNamespace>Shaders</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter\Warp.effect" />
-    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter\Gradient.effect" />
-    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\EffectTemplate.effect" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\SourceShader.h" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\FilterShader.h" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Warp.shader" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Template_FilterEffect.effect" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\ShaderCommon.h" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Transition_Doom.shader" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\TransitionShader.h" />
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Transition_Wave.shader" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\AlphaGradient.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\BadPixelRemoval.effect" />
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Filter\ColorShift.effect" />
@@ -53,6 +58,37 @@
     <None Include="$(MSBuildThisFileDirectory)StreamFX\Transition\WaveTransition.effect" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="$(MSBuildThisFileDirectory)ShaderFilter\Transition\" />
+    <Compile Include="$(MSBuildThisFileDirectory)ShaderFilter\Template_TransitionShader.shader" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_CrossHatch.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Gradient.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Blink.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Bloom.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Border.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Breathe.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_ColorShift.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_CRT.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Dither.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_DMD.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_EdgeDetect.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Halftone.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Noir.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Pixelate.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Progress.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_RadialWrap.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Shake.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Rage.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Rotate.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Scroll.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_ShapeMask.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Vignette.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Wobble.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Source_Hypnotic.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Source_NeonGrid.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Source_Spiral.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Source_TwilightZone.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Template_SourceShader.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Template_FilterShader.shader" />
   </ItemGroup>
 </Project>

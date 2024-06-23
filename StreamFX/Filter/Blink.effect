@@ -9,6 +9,22 @@ uniform float Frequency <
 	string field_type = "input";
 > = 1;
 
+uniform float Minimum <
+	string name = "Minimum";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 0;
+
+uniform float Maximum <
+	string name = "Maximum";
+	string field_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 1;
+
 uniform float DutyCycle <
 	string name = "Duty Cycle";
 	string field_type = "slider";
@@ -59,7 +75,7 @@ float4 PSDefault(VertData v_in) : TARGET
 	t = smoothstep(on - d, on + d, t) * (1 - smoothstep(off - d, off + d, t));
 
 	float4 color = InputA.Sample(def_sampler, v_in.uv);
-	color.a *= t;
+	color.a *= lerp(Minimum, Maximum, t);
 
 	return color;
 }

@@ -1,40 +1,36 @@
-// Template for new shaders
+﻿#include "FilterShader.h"
+#include "ShaderCommon.h"
 
-// view/projection matrix
-uniform float4x4 ViewProj;
+uniform float Strength <
+	string label = "Strength";
+	string widget_type = "slider";
+	float minimum = 0;
+	float maximum = 1;
+	float step = 0.01;
+> = 1;
 
-// source image texture
-uniform texture2d image;
-
-// time in seconds since the filter was created
-uniform float elapsed_time;
-
-// random float represneting the local time
-uniform float local_time;
-
-// count of how many times the shader has rendered a page
-uniform int loops;
-
-// per frame random number between 0 and 1
-uniform float rand_f;
-
-// per activation, load, or change of settings random number between 0 and 1
-uniform float rand_activation_f;
-
-// per instance on load random number between 0 and 1
-uniform float rand_instance_f;
-
-// size in uv coordinates of each texel (inverse of uv_size)
-uniform float2 uv_pixel_interval;
-
-// width and height in pixels of the screen
-uniform float2 uv_size;
-
-
+uniform bool PreserveAlpha <
+	string label = "Preserve Alpha";
+> = true;
 
 uniform bool MaintainAspect <
 	string label = "Maintain Aspect Ratio";
 > = true;
+
+#define GRADIENT_TYPE_LINEAR 0
+#define GRADIENT_TYPE_IRIS   1
+#define GRADIENT_TYPE_RADIAL 2
+
+uniform int GradientType <
+  string label = "Gradient Type";
+  string widget_type = "select";
+  int    option_0_value = GRADIENT_TYPE_LINEAR;
+  string option_0_label = "Linear";
+  int    option_1_value = GRADIENT_TYPE_IRIS;
+  string option_1_label = "Iris";
+  int    option_2_value = GRADIENT_TYPE_RADIAL;
+  string option_2_label = "Radial";
+> = GRADIENT_TYPE_LINEAR;
 
 uniform float CyclesPerSecond <
 	string label = "Cycles Per Second";
@@ -82,64 +78,44 @@ uniform int ColorCount <
 	string widget_type = "slider";
 	int minimum = 2;
 	int maximum = 8;
-> = 2;
+> = 4;
 
 uniform bool WrapColors <
 	string label = "Wrap Colors";
-> = false;
+> = true;
 
 uniform float4 Color1 <
 	string name = "Color 1";
-> = { 0, 0, 0, 1 };
+> = { 1, 0, 1, 1 };
  
 uniform float4 Color2 <
 	string name = "Color 2";
-> = { 1, 1, 1, 1 };
+> = { 0.5, 0, 1, 1 };
 
 uniform float4 Color3 <
 	string name = "Color 3";
-> = { 1, 1, 1, 1 };
+> = { 0, 0, 1, 1 };
 
 uniform float4 Color4 <
 	string name = "Color 4";
-> = { 1, 1, 1, 1 };
+> = { 0, 1, 1, 1 };
 
 uniform float4 Color5 <
 	string name = "Color 5";
-> = { 1, 1, 1, 1 };
+> = { 0, 1, 0, 1 };
 
 uniform float4 Color6 <
 	string name = "Color 6";
-> = { 1, 1, 1, 1 };
+> = { 1, 1, 0, 1 };
 
 uniform float4 Color7 <
 	string name = "Color 7";
-> = { 1, 1, 1, 1 };
+> = { 1, 0.5, 0, 1 };
 
 uniform float4 Color8 <
 	string name = "Color 8";
-> = { 1, 1, 1, 1 };
+> = { 1, 0, 0, 1 };
 
-
-sampler_state textureSampler
-{
-	Filter = Linear;
-	AddressU = Border;
-	AddressV = Border;
-	BorderColor = 00000000;
-};
-
-struct VertData
-{
-	float4 pos : POSITION;
-	float2 uv : TEXCOORD0;
-};
-
-#define PI		3.141592653589
-#define TWOPI	6.283185307179
-#define HALFPI 1.570796326794
-
-#define Remap(destA, destB, srcA, srcB, t)  lerp(destA, destB, (t - srcA) / (srcB - srcA))
 
 float4 Palette(float t)
 {
@@ -161,67 +137,46 @@ float4 Palette(float t)
 	return color;
 }
 
-float2x2 MakeRotation2D(float angle)
-{
-	float s, c;
-	sincos(angle, s, c);
 
-	return float2x2(c, s, -s, c);
-}
 
 
 float4 mainImage(VertData v_in) : TARGET
 {
+	float4 srcColor = image.Sample(border_texture_sampler, v_in.uv);
+
 	float2 uv = v_in.uv * 2 - 1;
 
 	if (MaintainAspect)
-		uv.x *= uv_size.x / uv_size.y;
+		uv.x *= uv_size.x / uv_size.y;	
 
 	uv = mul(uv, MakeRotation2D(RotationPhase * TWOPI + RotationsPerSecond * elapsed_time)) * Zoom;
+	
 
+	float t;
 
-	float4 color = image.Sample(textureSampler, uv);
+	switch (GradientType)
+	{
+		case GRADIENT_TYPE_LINEAR:
+		default:
+			t = uv.x * 0.5 + 0.5;
+			break;
 
-	// linear
-	float t = uv.x * 0.5 + 0.5;
+		case GRADIENT_TYPE_IRIS:
+			t = length(uv);
+			break;
 
-	// iris
-	// float t = length(uv);
-
-	// radial
-	// float t = atan2(uv.x, uv.y) / TWOPI;
+		case GRADIENT_TYPE_RADIAL:
+			t = atan2(uv.x, uv.y) / TWOPI;
+			break;
+	}
 
 	t += CyclePhase + CyclesPerSecond * elapsed_time;
 
-	color = Palette(t);
+	float4 gradColor = Palette(t);
+	float4 color = lerp(srcColor, gradColor, Strength);
+
+	if (PreserveAlpha)
+		color.a *= srcColor.a;
 
 	return color;
 }
-
-
-
-// offset which should be applied to the uv coordinates of the vertices
-uniform float2 uv_offset;
-
-// scale which should be applied to the uv coordinates of the vertices
-uniform float2 uv_scale;
-
-VertData mainTransform(VertData v_in)
-{
-	VertData vert_out;
-	vert_out.pos = mul(float4(v_in.pos.xyz, 1.0), ViewProj);
-	vert_out.uv = v_in.uv * uv_scale + uv_offset;
-	return vert_out;
-}
-
-
-technique Draw
-{
-	pass
-	{
-		vertex_shader = mainTransform(v_in);
-		pixel_shader = mainImage(v_in);
-	}
-}
-
-

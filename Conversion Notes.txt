@@ -1,0 +1,14 @@
+To convert StreamFX to ShaderFilter:
+
+change "id" from "streamfx-filter-shader" to "shader_filter"
+change "versioned_id" from "streamfx-filter-shader" to "shader_filter"
+under settings, remove "Commit", "Version", and "Shader.Shader.Technique"
+under settings, change "Shder.Shader.File" to "shader_file_name"
+under settings, add "from_file": true
+under settings, change the value of "shader_file_name" to point to the new equivalent shader
+
+Remember the new shaders have the extension .shader, not .effect.
+The new shaders are also all in the same directory instead of being split up between Filter, Source, and Transition.  Each new shader has a Filter_, Source_, or Transition_ prefix.
+Array indexers must be replaced with underscores in the shader values.  I.e.  "OffsetU[0]" becomes "OffsetU_0"
+Unfortunately colors are stored as an integer instead of as an array of floats.  You'll either need to know the numeric value of a color or re-choose it in the OBS UI.
+
