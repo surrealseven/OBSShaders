@@ -9,6 +9,7 @@
     <Import_RootNamespace>Shaders</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Gamma.shader" />
     <None Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_ChromaSwap.shader" />
     <None Include="$(MSBuildThisFileDirectory)ShaderFilter\SourceShader.h" />
     <None Include="$(MSBuildThisFileDirectory)ShaderFilter\FilterShader.h" />
@@ -79,6 +80,7 @@
     <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Progress.shader" />
     <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_RadialWrap.shader" />
     <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Posterize.shader" />
+    <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Anaglyph.shader" />
     <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Shake.shader" />
     <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Rage.shader" />
     <Content Include="$(MSBuildThisFileDirectory)ShaderFilter\Filter_Rotate.shader" />
