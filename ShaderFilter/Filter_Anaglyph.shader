@@ -43,5 +43,5 @@ float4 mainImage(VertData v_in) : TARGET
 	float lumaR = RgbToLuma(colorR.rgb);
 	float lumaC = RgbToLuma(colorC.rgb);
 
-	return float4(lumaR, lumaC, lumaC, min(colorR.a, colorC.a));
+	return float4(lumaR, lumaC, lumaC, max(colorR.a, colorC.a));
 }
